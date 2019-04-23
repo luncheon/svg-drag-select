@@ -15,6 +15,7 @@ export interface SvgDragSelectEvent {
 export interface SvgDragSelectOptions {
   readonly svg: SVGSVGElement
   readonly onSelect: (event: SvgDragSelectEvent) => any
+  readonly dragAreaOverlayClass?: string
   readonly intersection?: boolean
 }
 
@@ -22,20 +23,20 @@ export default (options: SvgDragSelectOptions) => {
   const svg = options.svg
   let dragStartPoint: DOMPointReadOnly | undefined
   let selectedElements: SvgDragSelectElement[] = []
-  const dragAreaIndicator = document.createElement('div')
-  const dragAreaIndicatorStyle = dragAreaIndicator.style
-  dragAreaIndicator.className = 'svg-drag-select-area'
-  dragAreaIndicatorStyle.position = 'fixed'
-  dragAreaIndicatorStyle.pointerEvents = 'none'
+  const dragAreaOverlay = document.body.appendChild(document.createElement('div'))
+  const dragAreaOverlayStyle = dragAreaOverlay.style
+  dragAreaOverlay.className = options.dragAreaOverlayClass || 'svg-drag-select-area'
+  dragAreaOverlayStyle.position = 'fixed'
+  dragAreaOverlayStyle.pointerEvents = 'none'
 
   const onPointerMove = function (this: SVGSVGElement, event: PointerEvent) {
     if (dragStartPoint !== undefined) {
       const currentClientX = event.clientX
       const currentClientY = event.clientY
-      dragAreaIndicatorStyle.left = Math.min(dragStartPoint.x, currentClientX) + 'px'
-      dragAreaIndicatorStyle.top = Math.min(dragStartPoint.y, currentClientY) + 'px'
-      dragAreaIndicatorStyle.width = Math.abs(dragStartPoint.x - currentClientX) + 'px'
-      dragAreaIndicatorStyle.height = Math.abs(dragStartPoint.y - currentClientY) + 'px'
+      dragAreaOverlayStyle.left = Math.min(dragStartPoint.x, currentClientX) + 'px'
+      dragAreaOverlayStyle.top = Math.min(dragStartPoint.y, currentClientY) + 'px'
+      dragAreaOverlayStyle.width = Math.abs(dragStartPoint.x - currentClientX) + 'px'
+      dragAreaOverlayStyle.height = Math.abs(dragStartPoint.y - currentClientY) + 'px'
 
       const transformMatrix = this.getCTM()!.multiply(this.getScreenCTM()!.inverse())
       const { x: x1, y: y1 } = dragStartPoint.matrixTransform(transformMatrix)
@@ -76,7 +77,7 @@ export default (options: SvgDragSelectOptions) => {
     if (event.button === 0) {
       const { clientX: x, clientY: y } = event
       dragStartPoint = DOMPointReadOnly.fromPoint({ x, y })
-      document.body.appendChild(dragAreaIndicator)
+      dragAreaOverlayStyle.display = ''
       this.setPointerCapture(event.pointerId)
       onPointerMove.call(this, event)
     }
@@ -84,9 +85,7 @@ export default (options: SvgDragSelectOptions) => {
 
   const onPointerUp = function (this: SVGSVGElement, event: PointerEvent) {
     this.releasePointerCapture(event.pointerId)
-    if (dragAreaIndicator.parentElement) {
-      dragAreaIndicator.parentElement.removeChild(dragAreaIndicator)
-    }
+    dragAreaOverlayStyle.display = 'none'
     dragStartPoint = undefined
   }
 
@@ -95,10 +94,14 @@ export default (options: SvgDragSelectOptions) => {
   svg.addEventListener('pointerup', onPointerUp)
 
   return {
+    dragAreaOverlay,
     cancel: () => {
       svg.removeEventListener('pointerdown', onPointerDown)
       svg.removeEventListener('pointermove', onPointerMove)
       svg.removeEventListener('pointerup', onPointerUp)
+      if (dragAreaOverlay.parentElement) {
+        dragAreaOverlay.parentElement.removeChild(dragAreaOverlay)
+      }
     }
   }
 }

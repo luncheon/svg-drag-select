@@ -19,6 +19,7 @@ html
         border: 1px solid #ccc;
         box-shadow: 0 0 8px #aaa;
         margin: 0 16px 8px 0;
+        touch-action: manipulation;
       }
       path {
         fill: #ddd;
@@ -27,7 +28,10 @@ html
       path.selected {
         fill: #f84f79;
       }
-      .svg-drag-select-area { border: 1px dotted gray; }
+      .svg-drag-select-area {
+        border: 1px dotted gray;
+        background-color: rgba(255,255,255,.4)
+      }
   body
     header
       h1= name
@@ -44,8 +48,13 @@ html
         svg: document.getElementsByTagName('svg')[0],
         intersection: true,
         onSelect: function (event) {
-          event.selectedElements.concat(event.previousSelectedElements).forEach(function (element) {
-            element.classList.toggle('selected', event.selectedElements.indexOf(element) !== -1)
-          })
+          event.selectedElements
+            .concat(event.previousSelectedElements)
+            .filter(function (element, index, elements) {
+              return elements.indexOf(element) === index
+            })
+            .forEach(function (element) {
+              element.classList.toggle('selected', event.selectedElements.indexOf(element) !== -1)
+            })
         },
       })

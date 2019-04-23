@@ -6,6 +6,7 @@ svg {
   border: 1px solid #ccc;
   box-shadow: 0 0 8px #aaa;
   margin: 0 16px 8px 0;
+  touch-action: manipulation;
 }
 path {
   fill: #ddd;
@@ -14,7 +15,10 @@ path {
 path.selected {
   fill: #f84f79;
 }
-.svg-drag-select-area { border: 1px dotted gray; }</style></head><body><header><h1>svg-drag-select</h1><a href="https://github.com/luncheon/svg-drag-select"><img src="https://cdn.jsdelivr.net/npm/octicons@7.0.1/build/svg/mark-github.svg" alt="GitHub" style="height: 2.5rem; margin-left: 1em; vertical-align: bottom;"></a></header><p></p><main><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+.svg-drag-select-area {
+  border: 1px dotted gray;
+  background-color: rgba(255,255,255,.4)
+}</style></head><body><header><h1>svg-drag-select</h1><a href="https://github.com/luncheon/svg-drag-select"><img src="https://cdn.jsdelivr.net/npm/octicons@7.0.1/build/svg/mark-github.svg" alt="GitHub" style="height: 2.5rem; margin-left: 1em; vertical-align: bottom;"></a></header><p></p><main><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--
 *************Map created by Simplemaps.com********************		
 *************Attribution is highly appreciated!***************
@@ -1601,8 +1605,13 @@ THE SOFTWARE.
   svg: document.getElementsByTagName('svg')[0],
   intersection: true,
   onSelect: function (event) {
-    event.selectedElements.concat(event.previousSelectedElements).forEach(function (element) {
-      element.classList.toggle('selected', event.selectedElements.indexOf(element) !== -1)
-    })
+    event.selectedElements
+      .concat(event.previousSelectedElements)
+      .filter(function (element, index, elements) {
+        return elements.indexOf(element) === index
+      })
+      .forEach(function (element) {
+        element.classList.toggle('selected', event.selectedElements.indexOf(element) !== -1)
+      })
   },
 })</script></body></html>
