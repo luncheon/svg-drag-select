@@ -107,7 +107,7 @@ html
               element.classList.toggle('selected', selectionChange.selectedElements.indexOf(element) !== -1)
             })
           document.getElementById('selected-items').value = selectionChange.selectedElements
-            .map(element => element.getAttribute('data-name'))
+            .map(function (element) { return element.getAttribute('data-name') })
             .sort()
             .join('\n')
         },
