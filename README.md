@@ -1,13 +1,17 @@
 # svg-drag-select
 
 A vanilla-js module for adding select-on-drag behavior to inline SVG elements.  
-Lightweight (~ 1.1 kB minified gzipped) with no dependencies.  
-This simply listens drag events and calls [getEnclosureList()](https://www.w3.org/TR/SVG11/struct.html#__svg__SVGSVGElement__getEnclosureList) or [getIntersectionList()](https://www.w3.org/TR/SVG11/struct.html#__svg__SVGSVGElement__getIntersectionList).
-
 [Demo](https://luncheon.github.io/svg-drag-select/)
 
-⚠️ [Firefox does not support getIntersectionList(), getEnclosureList().](https://bugzilla.mozilla.org/show_bug.cgi?id=501421)  
-⚠️ [Safari seems to support PointerEvents soon.](https://webkit.org/blog/8676/release-notes-for-safari-technology-preview-78/) [Currently please use polyfill.](https://github.com/jquery/PEP)
+This simply listens Pointer Events and calls [`getEnclosureList()`](https://www.w3.org/TR/SVG11/struct.html#__svg__SVGSVGElement__getEnclosureList) or [`getIntersectionList()`](https://www.w3.org/TR/SVG11/struct.html#__svg__SVGSVGElement__getIntersectionList).
+
+* Lightweight (~ 1.1 kB minified gzipped)
+  * Currently, [Pointer Events Polyfill](https://github.com/jquery/PEP) is required for Safari (but [Safari seems to support Pointer Events soon](https://webkit.org/blog/8676/release-notes-for-safari-technology-preview-78/)).  
+    No other dependencies.
+* Works correctly on IE 11.
+
+⚠️ [Firefox does not support `getIntersectionList()` and `getEnclosureList()`.](https://bugzilla.mozilla.org/show_bug.cgi?id=501421)  
+⚠️ Chrome and Safari's `getIntersectionList()` implementation is poor. IE 11 seems to be good.  
 
 
 ## Installation
