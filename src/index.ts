@@ -48,7 +48,6 @@ try {
 
 
 export default (options: SvgDragSelectOptions) => {
-  const svg = options.svg
   let pointerId: number | undefined
   let dragStartPoint: SVGPoint | undefined
   let selectedElements: SvgDragSelectElement[] = []
@@ -158,6 +157,13 @@ export default (options: SvgDragSelectOptions) => {
     }
   }
 
+  const svg = options.svg
+  const originalDraggable = svg.getAttribute('draggable')
+  const originalPointerEvents = svg.style.pointerEvents
+  const originalTouchAction = svg.style.touchAction
+  svg.style.pointerEvents = 'pinch-zoom'
+  svg.style.touchAction = 'all'
+  svg.setAttribute('draggable', 'false')
   svg.addEventListener('pointerdown', onPointerDown)
   svg.addEventListener('pointerup', onPointerUp)
   svg.addEventListener('pointercancel', onPointerUp)
@@ -165,6 +171,13 @@ export default (options: SvgDragSelectOptions) => {
   return {
     dragAreaOverlay,
     cancel: () => {
+      if (originalDraggable === null) {
+        svg.removeAttribute('draggable')
+      } else {
+        svg.setAttribute('draggable', originalDraggable)
+      }
+      svg.style.pointerEvents = originalPointerEvents
+      svg.style.touchAction = originalTouchAction
       svg.removeEventListener('pointerdown', onPointerDown)
       svg.removeEventListener('pointerup', onPointerUp)
       svg.removeEventListener('pointermove', onPointerMove)

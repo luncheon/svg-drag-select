@@ -1,7 +1,7 @@
 # svg-drag-select
 
 A vanilla-js module for adding select-on-drag behavior to inline SVG elements.  
-Lightweight (< 1 kB minified gzipped) with no dependencies.  
+Lightweight (~ 1.1 kB minified gzipped) with no dependencies.  
 This simply listens drag events and calls [#getEnclosureList()](https://www.w3.org/TR/SVG11/struct.html#__svg__SVGSVGElement__getEnclosureList) or [#getIntersectionList()](https://www.w3.org/TR/SVG11/struct.html#__svg__SVGSVGElement__getIntersectionList).
 
 
@@ -35,7 +35,7 @@ import svgDragSelect from "svg-drag-select"
 ```js
 const {
   cancel,           // cleanup funciton.
-                    // `cancel()` removes event listeners and the `dragAreaOverlay` element below.
+                    // please call `cancel()` when the select-on-drag behavior is no longer needed.
   dragAreaOverlay,  // a div element overlaying dragging area.
                     // you can customize the style of this element.
                     // this element has "svg-drag-select-area-overlay" class by default.
@@ -86,14 +86,6 @@ const {
 .svg-drag-select-area-overlay {
   border: 1px dotted gray;
   background-color: rgba(255,255,255,.4);
-}
-
-svg#so-sexy-svg {
-  /* for Internet Explorer, set `pointer-events: all` to the svg element. */
-  pointer-events: all;
-
-  /* for touch devices, please set `touch-action: pinch-zoom` to the svg element. */
-  touch-action: pinch-zoom;
 }
 ```
 
