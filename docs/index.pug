@@ -106,7 +106,10 @@ html
             .forEach(function (element) {
               element.classList.toggle('selected', selectionChange.selectedElements.indexOf(element) !== -1)
             })
-          document.getElementById('selected-items').value = selectionChange.selectedElements.map(element => element.getAttribute('data-name')).join('\n')
+          document.getElementById('selected-items').value = selectionChange.selectedElements
+            .map(element => element.getAttribute('data-name'))
+            .sort()
+            .join('\n')
         },
       }
       svgDragSelect(window.svgDragSelectOptions)
