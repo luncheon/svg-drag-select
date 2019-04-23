@@ -11,40 +11,82 @@ html
     link(rel="stylesheet" href="https://fonts.googleapis.com/css?family=Comfortaa|Roboto:300")
     link(rel="preload" as="script" href="https://www.google-analytics.com/analytics.js")
     style.
+      * { margin: 0; box-sizing: border-box; }
       html, body { height: 100%; }
-      body { margin: 8px 16px; font-family: Roboto,sans-serif; font-weight: 300; }
-      header { display: flex; align-items: center; white-space: nowrap; margin: .5em 0; }
-      h1 { margin: 0; font-family: Comfortaa; font-weight: 400; font-size: 2.5rem; }
-      svg {
-        border: 1px solid #ccc;
-        box-shadow: 0 0 8px #aaa;
-        margin: 0 16px 8px 0;
-        touch-action: pinch-zoom;
+      body { font-family: Roboto,sans-serif; font-weight: 300; }
+      header {
+        position: fixed;
+        left: 0;
+        top: 0;
+        right: 0;
+        white-space: nowrap;
+        padding: .5em 1em;
+        background-color: white;
+        box-shadow: 0 3px 3px gray;
       }
-      path {
-        fill: #ddd;
-        stroke: #888;
+      h1 {
+        display: flex;
+        align-items: center;
+        margin: 0 0 .5rem 0;
+        font-family: Comfortaa;
+        font-weight: 400;
+        font-size: 2.5rem;
       }
-      path.selected {
-        fill: #f84f79;
+      a, label {
+        display: inline-flex;
+        align-items: center;
+        user-select: none;
       }
-      .svg-drag-select-area {
+      label {
+        margin-right: 1em;
+      }
+      label, label > input { cursor: pointer; }
+      #selected-items {
+        position: fixed;
+        margin-top: 1.5em;
+        right: 1.5em;
+        bottom: 1.5em;
+        width: 8rem;
+        background-color: rgba(255,255,255,.8);
+      }
+      main {
+        width: fit-content;
+        padding-right: 10rem;
+      }
+      svg { touch-action: pinch-zoom; }
+      path { fill: #ddd; stroke: #888; }
+      path.selected { fill: #f84f79; }
+      .svg-drag-select-area-overlay {
         border: 1px dotted gray;
         background-color: rgba(255,255,255,.4)
       }
   body
     header
-      h1= name
-      a(href=`https://github.com/luncheon/${name}`)
-        img(src="https://cdn.jsdelivr.net/npm/octicons@7.0.1/build/svg/mark-github.svg" alt="GitHub" style="height: 2.5rem; margin-left: 1em; vertical-align: bottom;")
-    p= description
+      h1
+        | #{name}
+        a(href=`https://github.com/luncheon/${name}`)
+          img(src="https://cdn.jsdelivr.net/npm/octicons@7.0.1/build/svg/mark-github.svg" alt="GitHub" style="height: 2.5rem; margin-left: 1rem; vertical-align: bottom;")
+        div(style="flex: auto")
+      p= description
+      label
+        input(type="radio" name="intersection" checked onchange="window.svgDragSelectOptions.intersection = !this.checked")
+        | &nbsp;enclosure
+      label
+        input(type="radio" name="intersection" onchange="window.svgDragSelectOptions.intersection = this.checked")
+        | &nbsp;intersection
 
     main
-      label
-        input(type="checkbox" onchange="window.svgDragSelectOptions.intersection = this.checked")
-        | intersection
       //- https://simplemaps.com/resources/svg-world
       include ./world.svg
+
+    textarea#selected-items(disabled)
+
+    script.
+      addEventListener('load', function () {
+        var headerHeight = document.getElementsByTagName('header')[0].offsetHeight
+        document.getElementsByTagName('main')[0].style.marginTop = headerHeight + 'px'
+        document.getElementById('selected-items').style.top = headerHeight + 'px'
+      })
     script(src="index.min.js")
     script.
       window.svgDragSelectOptions = {
@@ -66,6 +108,7 @@ html
             .forEach(function (element) {
               element.classList.toggle('selected', selectionChange.selectedElements.indexOf(element) !== -1)
             })
+          document.getElementById('selected-items').value = selectionChange.selectedElements.map(element => element.getAttribute('data-name')).join('\n')
         },
       }
       svgDragSelect(window.svgDragSelectOptions)

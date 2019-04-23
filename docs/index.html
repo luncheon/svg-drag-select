@@ -1,24 +1,52 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>svg-drag-select</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-64398169-1"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','UA-64398169-1');</script><link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Comfortaa|Roboto:300"><link rel="preload" as="script" href="https://www.google-analytics.com/analytics.js"><style>html, body { height: 100%; }
-body { margin: 8px 16px; font-family: Roboto,sans-serif; font-weight: 300; }
-header { display: flex; align-items: center; white-space: nowrap; margin: .5em 0; }
-h1 { margin: 0; font-family: Comfortaa; font-weight: 400; font-size: 2.5rem; }
-svg {
-  border: 1px solid #ccc;
-  box-shadow: 0 0 8px #aaa;
-  margin: 0 16px 8px 0;
-  touch-action: pinch-zoom;
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>svg-drag-select</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-64398169-1"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','UA-64398169-1');</script><link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Comfortaa|Roboto:300"><link rel="preload" as="script" href="https://www.google-analytics.com/analytics.js"><style>* { margin: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body { font-family: Roboto,sans-serif; font-weight: 300; }
+header {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  white-space: nowrap;
+  padding: .5em 1em;
+  background-color: white;
+  box-shadow: 0 3px 3px gray;
 }
-path {
-  fill: #ddd;
-  stroke: #888;
+h1 {
+  display: flex;
+  align-items: center;
+  margin: 0 0 .5rem 0;
+  font-family: Comfortaa;
+  font-weight: 400;
+  font-size: 2.5rem;
 }
-path.selected {
-  fill: #f84f79;
+a, label {
+  display: inline-flex;
+  align-items: center;
+  user-select: none;
 }
-.svg-drag-select-area {
+label {
+  margin-right: 1em;
+}
+label, label > input { cursor: pointer; }
+#selected-items {
+  position: fixed;
+  margin-top: 1.5em;
+  right: 1.5em;
+  bottom: 1.5em;
+  width: 8rem;
+  background-color: rgba(255,255,255,.8);
+}
+main {
+  width: fit-content;
+  padding-right: 10rem;
+}
+svg { touch-action: pinch-zoom; }
+path { fill: #ddd; stroke: #888; }
+path.selected { fill: #f84f79; }
+.svg-drag-select-area-overlay {
   border: 1px dotted gray;
   background-color: rgba(255,255,255,.4)
-}</style></head><body><header><h1>svg-drag-select</h1><a href="https://github.com/luncheon/svg-drag-select"><img src="https://cdn.jsdelivr.net/npm/octicons@7.0.1/build/svg/mark-github.svg" alt="GitHub" style="height: 2.5rem; margin-left: 1em; vertical-align: bottom;"></a></header><p></p><main><label><input type="checkbox" onchange="window.svgDragSelectOptions.intersection = this.checked">intersection</label><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+}</style></head><body><header><h1>svg-drag-select<a href="https://github.com/luncheon/svg-drag-select"><img src="https://cdn.jsdelivr.net/npm/octicons@7.0.1/build/svg/mark-github.svg" alt="GitHub" style="height: 2.5rem; margin-left: 1rem; vertical-align: bottom;"></a><div style="flex: auto"></div></h1><p></p><label><input type="radio" name="intersection" checked onchange="window.svgDragSelectOptions.intersection = !this.checked">&nbsp;enclosure</label><label><input type="radio" name="intersection" onchange="window.svgDragSelectOptions.intersection = this.checked">&nbsp;intersection</label></header><main><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--
 *************Map created by Simplemaps.com********************		
 *************Attribution is highly appreciated!***************
@@ -1601,7 +1629,11 @@ THE SOFTWARE.
      d="m 879.6,395.2 -0.2,-0.2 -0.7,0.5 -0.6,0 0.1,0.2 0.1,0.2 0.7,0.4 0.6,-1.1 z m 13.5,-2.1 0,-0.1 -0.1,0 -0.1,0.1 -1.3,-0.1 -0.2,0.6 -0.5,0.4 0,0.7 0.5,0.7 0.3,0.1 0.5,0.1 0.7,-0.4 0.2,-0.4 0.1,-0.8 -0.1,-0.4 0,-0.5 z m -9.7,0.8 0.5,-0.4 0,-0.2 -0.1,-0.3 -0.5,-0.3 -0.2,0 -0.2,0.2 -0.2,0.4 0.3,0.5 0.2,0.1 0.2,0 z m 4.7,-2.3 1.2,-1 0,-0.3 -1,0.1 -1.1,1 -0.3,0.1 -1,0.1 -0.5,0 -0.4,0.2 0.2,0.3 0.4,1 0.7,0.9 0.6,-0.2 0.3,-0.2 0.4,-0.6 0.5,-1.4 z m 11.6,1.3 1.5,-0.5 0.3,-1 0.3,-1.1 0,-0.7 -0.2,-0.3 -0.1,0 -0.4,0 -0.3,0.2 -0.1,0.6 -0.7,1.3 -0.5,1.2 -0.7,0.6 -0.7,0.2 0.1,0.1 0.7,0.1 0.8,-0.7 z m -19.7,-2 0.5,-0.5 0.1,-0.3 -0.1,-0.5 0.2,-0.2 -0.1,-0.4 -0.3,-0.4 -0.7,0 -0.4,0.6 0.6,1.2 0.1,0.5 0.1,0 z m 22.4,-2.7 0.9,-0.3 0.5,-0.3 0.1,-0.9 0.2,-0.3 -0.2,-0.3 -0.2,0.2 -0.2,0.4 -0.6,0.2 -0.8,0.4 -0.2,0.3 -0.2,0.9 0.4,0.1 0.3,-0.4 z"
      style="fill-rule:evenodd" />
 </svg>
-</main><script src="index.min.js"></script><script>window.svgDragSelectOptions = {
+</main><textarea id="selected-items" disabled></textarea><script>addEventListener('load', function () {
+  var headerHeight = document.getElementsByTagName('header')[0].offsetHeight
+  document.getElementsByTagName('main')[0].style.marginTop = headerHeight + 'px'
+  document.getElementById('selected-items').style.top = headerHeight + 'px'
+})</script><script src="index.min.js"></script><script>window.svgDragSelectOptions = {
   svg: document.getElementsByTagName('svg')[0],
   intersection: false,
   onSelectionStart: function (selectionStart) {
@@ -1620,6 +1652,7 @@ THE SOFTWARE.
       .forEach(function (element) {
         element.classList.toggle('selected', selectionChange.selectedElements.indexOf(element) !== -1)
       })
+    document.getElementById('selected-items').value = selectionChange.selectedElements.map(element => element.getAttribute('data-name')).join('\n')
   },
 }
 svgDragSelect(window.svgDragSelectOptions)</script></body></html>

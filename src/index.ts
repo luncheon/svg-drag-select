@@ -31,7 +31,6 @@ export interface SvgDragSelectOptions {
   readonly onSelectionStart?: (event: SvgDragSelectionStart) => any
   readonly onSelectionChange?: (event: SvgDragSelectionChange) => any
   readonly onSelectionEnd?: (event: SvgDragSelectionEnd) => any
-  readonly dragAreaOverlayClass?: string
   readonly intersection?: boolean
 }
 
@@ -55,7 +54,7 @@ export default (options: SvgDragSelectOptions) => {
   let selectedElements: SvgDragSelectElement[] = []
   const dragAreaOverlay = document.body.appendChild(document.createElement('div'))
   const dragAreaOverlayStyle = dragAreaOverlay.style
-  dragAreaOverlay.className = options.dragAreaOverlayClass || 'svg-drag-select-area'
+  dragAreaOverlay.className = 'svg-drag-select-area-overlay'
   dragAreaOverlayStyle.position = 'fixed'
   dragAreaOverlayStyle.pointerEvents = 'none'
 
