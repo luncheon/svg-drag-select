@@ -18,17 +18,13 @@ h1 {
   font-weight: 400;
   font-size: 2.5rem;
 }
-p {
-  margin: .5em 0;
-}
+p { margin: .5em 0; }
 a, label {
   display: inline-flex;
   align-items: center;
   user-select: none;
 }
-label {
-  margin-right: 1em;
-}
+label { margin-right: 1em; }
 label, label > input { cursor: pointer; }
 #selected-items {
   position: fixed;
@@ -1635,7 +1631,7 @@ THE SOFTWARE.
   var headerHeight = document.getElementsByTagName('header')[0].offsetHeight
   document.getElementsByTagName('main')[0].style.marginTop = headerHeight + 'px'
   document.getElementById('selected-items').style.top = headerHeight + 'px'
-})</script><script src="index.min.js"></script><script>window.svgDragSelectOptions = {
+})</script><script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.1.0"></script><script>window.svgDragSelectOptions = {
   svg: document.getElementsByTagName('svg')[0],
   intersection: false,
   onSelectionStart: function (selectionStart) {

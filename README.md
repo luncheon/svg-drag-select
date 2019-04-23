@@ -10,23 +10,21 @@ This simply listens drag events and calls [#getEnclosureList()](https://www.w3.o
 
 ## Installation
 
-T.B.D.
-
-<!-- ### via [npm](https://www.npmjs.com/package/svg-drag-select) (with a module bundler)
+### via [npm](https://www.npmjs.com/package/svg-drag-select) (with a module bundler)
 
 ```
 $ npm i svg-drag-select
 ```
 
 ```js
-import 'svg-drag-select'
+import "svg-drag-select"
 ```
 
 ### via CDN ([jsDelivr](https://www.jsdelivr.com/package/npm/svg-drag-select))
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.1.0"></script>
-``` -->
+```
 
 
 ## Usage and options
