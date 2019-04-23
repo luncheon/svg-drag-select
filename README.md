@@ -2,8 +2,7 @@
 
 A vanilla-js module for adding select-on-drag behavior to inline SVG elements.  
 Lightweight (~ 1.1 kB minified gzipped) with no dependencies.  
-This simply listens drag events and calls [#getEnclosureList()](https://www.w3.org/TR/SVG11/struct.html#__svg__SVGSVGElement__getEnclosureList) or [#getIntersectionList()](https://www.w3.org/TR/SVG11/struct.html#__svg__SVGSVGElement__getIntersectionList).
-
+This simply listens drag events and calls [getEnclosureList()](https://www.w3.org/TR/SVG11/struct.html#__svg__SVGSVGElement__getEnclosureList) or [getIntersectionList()](https://www.w3.org/TR/SVG11/struct.html#__svg__SVGSVGElement__getIntersectionList).
 
 [Demo](https://luncheon.github.io/svg-drag-select/)
 
@@ -23,7 +22,7 @@ import svgDragSelect from "svg-drag-select"
 ### via CDN ([jsDelivr](https://www.jsdelivr.com/package/npm/svg-drag-select))
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.1.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.1.1"></script>
 <script>/* `window.svgDragSelect` function is available */</script>
 ```
 
