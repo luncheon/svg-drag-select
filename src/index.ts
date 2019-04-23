@@ -50,7 +50,7 @@ try {
 export default (options: SvgDragSelectOptions) => {
   const svg = options.svg
   let pointerId: number | undefined
-  let dragStartPoint: DOMPointReadOnly | undefined
+  let dragStartPoint: SVGPoint | undefined
   let selectedElements: SvgDragSelectElement[] = []
   const dragAreaOverlay = document.body.appendChild(document.createElement('div'))
   const dragAreaOverlayStyle = dragAreaOverlay.style
@@ -70,11 +70,14 @@ export default (options: SvgDragSelectOptions) => {
       dragAreaOverlayStyle.width = Math.abs(dragStartPoint.x - currentClientX) + 'px'
       dragAreaOverlayStyle.height = Math.abs(dragStartPoint.y - currentClientY) + 'px'
 
-      const transformMatrix = this.getCTM()!.multiply(this.getScreenCTM()!.inverse())
+      const ctm = this.getCTM()
+      const inverseClientCtm = this.getScreenCTM()!.inverse()
+      const transformMatrix = ctm ? ctm.multiply(inverseClientCtm) : inverseClientCtm
       const { x: x1, y: y1 } = dragStartPoint.matrixTransform(transformMatrix)
-      const { x: x2, y: y2 } = DOMPointReadOnly
-        .fromPoint({ x: currentClientX, y: currentClientY })
-        .matrixTransform(transformMatrix)
+      const currentPoint = this.createSVGPoint()
+      currentPoint.x = currentClientX
+      currentPoint.y = currentClientY
+      const { x: x2, y: y2 } = currentPoint.matrixTransform(transformMatrix)
       const rect = this.createSVGRect()
       rect.x = Math.min(x1, x2)
       rect.y = Math.min(y1, y2)
@@ -123,7 +126,9 @@ export default (options: SvgDragSelectOptions) => {
         return
       }
       pointerId = event.pointerId
-      dragStartPoint = DOMPointReadOnly.fromPoint({ x, y })
+      dragStartPoint = this.createSVGPoint()
+      dragStartPoint.x = x
+      dragStartPoint.y = y
       onPointerMove.call(this, event)
       dragAreaOverlayStyle.display = ''
       this.addEventListener('pointermove', onPointerMove, event.pointerType === 'touch' ? nonPassive : undefined)

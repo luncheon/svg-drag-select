@@ -17,20 +17,22 @@ $ npm i svg-drag-select
 ```
 
 ```js
-import "svg-drag-select"
+import svgDragSelect from "svg-drag-select"
 ```
 
 ### via CDN ([jsDelivr](https://www.jsdelivr.com/package/npm/svg-drag-select))
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.1.0"></script>
+<script>/* `window.svgDragSelect` function is available */</script>
 ```
 
 
 ## Usage and options
 
+* JavaScript
+
 ```js
-// setup
 const {
   cancel,           // cleanup funciton.
                     // `cancel()` removes event listeners and the `dragAreaOverlay` element below.
@@ -77,12 +79,13 @@ const {
 })
 ```
 
+* CSS
+
 ```css
-/* please setup drag area overlay styles. */
+/* please setup drag area overlay styles. for example: */
 .svg-drag-select-area-overlay {
-  /* this is an example. */
   border: 1px dotted gray;
-  background-color: rgba(255,255,255,.4)
+  background-color: rgba(255,255,255,.4);
 }
 
 /* for touch devices, please set `touch-action: pinch-zoom` to the svg element. */
