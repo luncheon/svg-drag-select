@@ -161,8 +161,8 @@ export default (options: SvgDragSelectOptions) => {
   const originalDraggable = svg.getAttribute('draggable')
   const originalPointerEvents = svg.style.pointerEvents
   const originalTouchAction = svg.style.touchAction
-  svg.style.pointerEvents = 'pinch-zoom'
-  svg.style.touchAction = 'all'
+  svg.style.pointerEvents = 'all'
+  svg.style.touchAction = 'pinch-zoom'
   svg.setAttribute('draggable', 'false')
   svg.addEventListener('pointerdown', onPointerDown)
   svg.addEventListener('pointerup', onPointerUp)
