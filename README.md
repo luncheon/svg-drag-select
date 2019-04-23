@@ -19,16 +19,18 @@ This simply listens Pointer Events and calls [`getEnclosureList()`](https://www.
 ### via [npm](https://www.npmjs.com/package/svg-drag-select) (with a module bundler)
 
 ```
-$ npm i svg-drag-select
+$ npm i pepjs svg-drag-select
 ```
 
 ```js
+import "pepjs"
 import svgDragSelect from "svg-drag-select"
 ```
 
 ### via CDN ([jsDelivr](https://www.jsdelivr.com/package/npm/svg-drag-select))
 
 ```html
+<script src="https://cdn.jsdelivr.net/npm/pepjs@0.5.2"></script>
 <script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.1.2"></script>
 <script>/* `window.svgDragSelect` function is available */</script>
 ```
