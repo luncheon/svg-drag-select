@@ -40,7 +40,7 @@ main {
 }
 svg { touch-action: pinch-zoom; }
 path { fill: #ddd; stroke: #888; }
-path.selected { fill: #f84f79; }
+path[data-selected] { fill: #f84f79; }
 .svg-drag-select-area-overlay {
   border: 1px dotted gray;
   background-color: rgba(255,255,255,.4)
@@ -1647,7 +1647,11 @@ THE SOFTWARE.
         return elements.indexOf(element) === index
       })
       .forEach(function (element) {
-        element.classList.toggle('selected', selectionChange.selectedElements.indexOf(element) !== -1)
+        if (selectionChange.selectedElements.indexOf(element) !== -1) {
+          element.setAttribute('data-selected', '')
+        } else {
+          element.removeAttribute('data-selected')
+        }
       })
     document.getElementById('selected-items').value = selectionChange.selectedElements
       .map(function (element) { return element.getAttribute('data-name') })
