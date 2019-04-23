@@ -1,26 +1,56 @@
 // export type SvgDragSelectElement = ReturnType<SVGSVGElement["getIntersectionList"]> extends NodeListOf<infer T> ? T : never
 export type SvgDragSelectElement = SVGCircleElement | SVGEllipseElement | SVGImageElement | SVGLineElement | SVGPathElement | SVGPolygonElement | SVGPolylineElement | SVGRectElement | SVGTextElement | SVGUseElement
 
-export interface SvgDragSelectEvent {
+export interface SvgDragSelectionStart {
   readonly svg: SVGSVGElement
   readonly pointerEvent: PointerEvent
-  readonly selectedElements: readonly SvgDragSelectElement[]
-  readonly previousSelectedElements: readonly SvgDragSelectElement[]
   readonly dragStartClientX: number
   readonly dragStartClientY: number
   readonly currentClientX: number
   readonly currentClientY: number
+  cancel(): void
+}
+
+export interface SvgDragSelectionEnd {
+  readonly svg: SVGSVGElement
+  readonly pointerEvent: PointerEvent
+  readonly dragStartClientX: number
+  readonly dragStartClientY: number
+  readonly currentClientX: number
+  readonly currentClientY: number
+  readonly selectedElements: readonly SvgDragSelectElement[]
+}
+
+export interface SvgDragSelectionChange extends SvgDragSelectionEnd {
+  readonly previousSelectedElements: readonly SvgDragSelectElement[]
 }
 
 export interface SvgDragSelectOptions {
   readonly svg: SVGSVGElement
-  readonly onSelect: (event: SvgDragSelectEvent) => any
+  readonly referenceElement?: SVGElement
+  readonly onSelectionStart?: (event: SvgDragSelectionStart) => any
+  readonly onSelectionChange?: (event: SvgDragSelectionChange) => any
+  readonly onSelectionEnd?: (event: SvgDragSelectionEnd) => any
   readonly dragAreaOverlayClass?: string
   readonly intersection?: boolean
 }
 
+let nonPassive: { passive: true } | undefined
+try {
+  const options = Object.defineProperty({}, 'passive', {
+    get() {
+      nonPassive = { passive: true }
+    }
+  })
+  const noop = () => {}
+  addEventListener('t', noop, options);
+  removeEventListener('t', noop, options);
+} catch(err) {}
+
+
 export default (options: SvgDragSelectOptions) => {
   const svg = options.svg
+  let pointerId: number | undefined
   let dragStartPoint: DOMPointReadOnly | undefined
   let selectedElements: SvgDragSelectElement[] = []
   const dragAreaOverlay = document.body.appendChild(document.createElement('div'))
@@ -30,7 +60,10 @@ export default (options: SvgDragSelectOptions) => {
   dragAreaOverlayStyle.pointerEvents = 'none'
 
   const onPointerMove = function (this: SVGSVGElement, event: PointerEvent) {
-    if (dragStartPoint !== undefined) {
+    if (dragStartPoint && event.pointerId === pointerId) {
+      if (event.pointerType === 'touch') {
+        event.preventDefault()
+      }
       const currentClientX = event.clientX
       const currentClientY = event.clientY
       dragAreaOverlayStyle.left = Math.min(dragStartPoint.x, currentClientX) + 'px'
@@ -48,10 +81,11 @@ export default (options: SvgDragSelectOptions) => {
       rect.y = Math.min(y1, y2)
       rect.width = Math.abs(x1 - x2)
       rect.height = Math.abs(y1 - y2)
+      const referenceElement = options.referenceElement || null
       const newSelectedElements = Array.prototype.slice.apply(
         options.intersection
-        ? this.getIntersectionList(rect, null!)
-        : this.getEnclosureList(rect, null!)
+        ? this.getIntersectionList(rect, referenceElement!)
+        : this.getEnclosureList(rect, referenceElement!)
       )
       if (
         selectedElements.length !== newSelectedElements.length ||
@@ -59,46 +93,76 @@ export default (options: SvgDragSelectOptions) => {
       ) {
         const previousSelectedElements = selectedElements
         selectedElements = newSelectedElements
-        options.onSelect({
+        options.onSelectionChange && options.onSelectionChange({
           svg: this,
           pointerEvent: event,
-          selectedElements,
-          previousSelectedElements,
           dragStartClientX: dragStartPoint.x,
           dragStartClientY: dragStartPoint.y,
           currentClientX,
           currentClientY,
+          selectedElements,
+          previousSelectedElements,
         })
       }
     }
   }
 
   const onPointerDown = function (this: SVGSVGElement, event: PointerEvent) {
-    if (event.button === 0) {
+    if (event.isPrimary && pointerId === undefined) {
       const { clientX: x, clientY: y } = event
+      let canceled: any
+      options.onSelectionStart && options.onSelectionStart({
+        svg: this,
+        pointerEvent: event,
+        dragStartClientX: x,
+        dragStartClientY: y,
+        currentClientX: x,
+        currentClientY: y,
+        cancel: () => canceled = true,
+      })
+      if (canceled) {
+        return
+      }
+      pointerId = event.pointerId
       dragStartPoint = DOMPointReadOnly.fromPoint({ x, y })
-      dragAreaOverlayStyle.display = ''
-      this.setPointerCapture(event.pointerId)
       onPointerMove.call(this, event)
+      dragAreaOverlayStyle.display = ''
+      this.addEventListener('pointermove', onPointerMove, event.pointerType === 'touch' ? nonPassive : undefined)
+      this.setPointerCapture(event.pointerId)
     }
   }
 
   const onPointerUp = function (this: SVGSVGElement, event: PointerEvent) {
-    this.releasePointerCapture(event.pointerId)
-    dragAreaOverlayStyle.display = 'none'
-    dragStartPoint = undefined
+    if (event.pointerId === pointerId) {
+      this.releasePointerCapture(pointerId)
+      this.removeEventListener('pointermove', onPointerMove)
+      pointerId = undefined
+      dragAreaOverlayStyle.display = 'none'
+      if (dragStartPoint) {
+        const _dragStartPoint = dragStartPoint
+        dragStartPoint = undefined
+        options.onSelectionEnd && options.onSelectionEnd({
+          svg: this,
+          pointerEvent: event,
+          dragStartClientX: _dragStartPoint.x,
+          dragStartClientY: _dragStartPoint.y,
+          currentClientX: event.clientX,
+          currentClientY: event.clientY,
+          selectedElements,
+        })
+      }
+    }
   }
 
   svg.addEventListener('pointerdown', onPointerDown)
-  svg.addEventListener('pointermove', onPointerMove)
   svg.addEventListener('pointerup', onPointerUp)
 
   return {
     dragAreaOverlay,
     cancel: () => {
       svg.removeEventListener('pointerdown', onPointerDown)
-      svg.removeEventListener('pointermove', onPointerMove)
       svg.removeEventListener('pointerup', onPointerUp)
+      svg.removeEventListener('pointermove', onPointerMove)
       if (dragAreaOverlay.parentElement) {
         dragAreaOverlay.parentElement.removeChild(dragAreaOverlay)
       }

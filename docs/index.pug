@@ -19,8 +19,6 @@ html
         border: 1px solid #ccc;
         box-shadow: 0 0 8px #aaa;
         margin: 0 16px 8px 0;
-        touch-action: none;
-        touch-action: manipulation;
       }
       path {
         fill: #ddd;
@@ -41,21 +39,32 @@ html
     p= description
 
     main
+      label
+        input(type="checkbox" onchange="window.svgDragSelectOptions.intersection = this.checked")
+        | intersection
       //- https://simplemaps.com/resources/svg-world
       include ./world.svg
     script(src="index.min.js")
     script.
-      svgDragSelect({
+      window.svgDragSelectOptions = {
         svg: document.getElementsByTagName('svg')[0],
-        intersection: true,
-        onSelect: function (event) {
-          event.selectedElements
-            .concat(event.previousSelectedElements)
+        intersection: false,
+        onSelectionStart: function (selectionStart) {
+          console.log("onSelectionStart", selectionStart)
+        },
+        onSelectionEnd: function (selectionEnd) {
+          console.log("onSelectionEnd", selectionEnd)
+        },
+        onSelectionChange: function (selectionChange) {
+          console.log("onSelectionChange", selectionChange)
+          selectionChange.selectedElements
+            .concat(selectionChange.previousSelectedElements)
             .filter(function (element, index, elements) {
               return elements.indexOf(element) === index
             })
             .forEach(function (element) {
-              element.classList.toggle('selected', event.selectedElements.indexOf(element) !== -1)
+              element.classList.toggle('selected', selectionChange.selectedElements.indexOf(element) !== -1)
             })
         },
-      })
+      }
+      svgDragSelect(window.svgDragSelectOptions)
