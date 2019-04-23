@@ -35,11 +35,11 @@ export interface SvgDragSelectOptions {
   readonly intersection?: boolean
 }
 
-let nonPassive: { passive: true } | undefined
+let nonPassive: { passive: false } | undefined
 try {
   const options = Object.defineProperty({}, 'passive', {
     get() {
-      nonPassive = { passive: true }
+      nonPassive = { passive: false }
     }
   })
   const noop = () => {}
@@ -61,7 +61,7 @@ export default (options: SvgDragSelectOptions) => {
 
   const onPointerMove = function (this: SVGSVGElement, event: PointerEvent) {
     if (dragStartPoint && event.pointerId === pointerId) {
-      if (event.pointerType === 'touch') {
+      if (event.type === 'pointermove' && event.pointerType === 'touch') {
         event.preventDefault()
       }
       const currentClientX = event.clientX
