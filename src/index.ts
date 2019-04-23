@@ -156,6 +156,7 @@ export default (options: SvgDragSelectOptions) => {
 
   svg.addEventListener('pointerdown', onPointerDown)
   svg.addEventListener('pointerup', onPointerUp)
+  svg.addEventListener('pointercancel', onPointerUp)
 
   return {
     dragAreaOverlay,
@@ -163,6 +164,7 @@ export default (options: SvgDragSelectOptions) => {
       svg.removeEventListener('pointerdown', onPointerDown)
       svg.removeEventListener('pointerup', onPointerUp)
       svg.removeEventListener('pointermove', onPointerMove)
+      svg.removeEventListener('pointercancel', onPointerUp)
       if (dragAreaOverlay.parentElement) {
         dragAreaOverlay.parentElement.removeChild(dragAreaOverlay)
       }
