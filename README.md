@@ -88,8 +88,11 @@ const {
   background-color: rgba(255,255,255,.4);
 }
 
-/* for touch devices, please set `touch-action: pinch-zoom` to the svg element. */
 svg#so-sexy-svg {
+  /* for Internet Explorer, set `pointer-events: all` to the svg element. */
+  pointer-events: all;
+
+  /* for touch devices, please set `touch-action: pinch-zoom` to the svg element. */
   touch-action: pinch-zoom;
 }
 ```
