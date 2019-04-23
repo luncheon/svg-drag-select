@@ -18,11 +18,11 @@ export interface SvgDragSelectionEnd {
   readonly dragStartClientY: number
   readonly currentClientX: number
   readonly currentClientY: number
-  readonly selectedElements: readonly SvgDragSelectElement[]
+  readonly selectedElements: ReadonlyArray<SvgDragSelectElement>
 }
 
 export interface SvgDragSelectionChange extends SvgDragSelectionEnd {
-  readonly previousSelectedElements: readonly SvgDragSelectElement[]
+  readonly previousSelectedElements: ReadonlyArray<SvgDragSelectElement>
 }
 
 export interface SvgDragSelectOptions {
