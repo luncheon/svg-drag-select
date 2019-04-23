@@ -1,7 +1,7 @@
 {
   "name": "svg-drag-select",
   "version": "0.0.0",
-  "description": "",
+  "description": "A vanilla-js module for adding select-on-drag behavior to inline SVG elements.",
   "license": "WTFPL",
   "repository": "luncheon/svg-drag-select",
   "main": "cjs/index.js",
