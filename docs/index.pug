@@ -13,7 +13,7 @@ html
     style.
       * { margin: 0; box-sizing: border-box; }
       html, body { height: 100%; }
-      body { font-family: Roboto,sans-serif; font-weight: 300; }
+      body { font-family: Roboto,sans-serif; font-weight: 300; overscroll-behavior: contain; }
       header {
         position: fixed;
         left: 0;
@@ -84,6 +84,7 @@ html
         document.getElementsByTagName('main')[0].style.marginTop = headerHeight + 'px'
         document.getElementById('selected-items').style.top = headerHeight + 'px'
       })
+    script(src="https://code.jquery.com/pep/0.4.3/pep.js")
     script(src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.1.2")
     script.
       window.svgDragSelectOptions = {

@@ -6,6 +6,9 @@ This simply listens drag events and calls [getEnclosureList()](https://www.w3.or
 
 [Demo](https://luncheon.github.io/svg-drag-select/)
 
+⚠️ [Firefox does not support getIntersectionList(), getEnclosureList().](https://bugzilla.mozilla.org/show_bug.cgi?id=501421)  
+⚠️ [Safari seems to support PointerEvents soon.](https://webkit.org/blog/8676/release-notes-for-safari-technology-preview-78/) [Currently please use polyfill.](https://github.com/jquery/PEP)
+
 
 ## Installation
 
