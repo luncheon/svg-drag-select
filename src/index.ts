@@ -1,6 +1,6 @@
-// export type SvgDragSelectElement = ReturnType<SVGSVGElement["getIntersectionList"]> extends NodeListOf<infer T> ? T : never
-export type SvgDragSelectElement = SVGCircleElement | SVGEllipseElement | SVGImageElement | SVGLineElement | SVGPathElement | SVGPolygonElement | SVGPolylineElement | SVGRectElement | SVGTextElement | SVGUseElement
-const svgDragSelectElementTypes = [SVGCircleElement, SVGEllipseElement, SVGImageElement, SVGLineElement, SVGPathElement, SVGPolygonElement, SVGPolylineElement, SVGRectElement, SVGTextElement, SVGUseElement]
+import { nonPassive } from './non-passive';
+import { SvgDragSelectElement, getEnclosures, getIntersections } from './selector';
+export { SvgDragSelectElement } from './selector'
 
 export interface SvgDragSelectionStart {
   readonly svg: SVGSVGElement
@@ -13,7 +13,7 @@ export interface SvgDragSelectSelectorContext {
   readonly svg: SVGSVGElement
   readonly referenceElement: SVGElement | null
   readonly pointerEvent: PointerEvent
-  readonly dragAreaInClientCoordinate: DOMRect
+  readonly dragAreaInClientCoordinate: SVGRect
   readonly dragAreaInSvgCoordinate: SVGRect
   readonly dragAreaInInitialSvgCoordinate: SVGRect
   getEnclosures(): SvgDragSelectElement[]
@@ -28,7 +28,7 @@ export interface SvgDragSelectionEnd {
   readonly svg: SVGSVGElement
   readonly referenceElement: SVGElement | null
   readonly pointerEvent: PointerEvent
-  readonly dragAreaInClientCoordinate: DOMRect
+  readonly dragAreaInClientCoordinate: SVGRect
   readonly dragAreaInSvgCoordinate: SVGRect
   readonly dragAreaInInitialSvgCoordinate: SVGRect
   readonly selectedElements: ReadonlyArray<SvgDragSelectElement>
@@ -47,26 +47,7 @@ export interface SvgDragSelectOptions<T = SvgDragSelectElement> {
   readonly selector?: 'intersection' | 'enclosure' | SvgDragSelectSelector<T>
 }
 
-let nonPassive: { passive: false } | undefined
-try {
-  const options = Object.defineProperty({}, 'passive', {
-    get() {
-      nonPassive = { passive: false }
-    }
-  })
-  const noop = () => {}
-  addEventListener('t', noop, options);
-  removeEventListener('t', noop, options);
-} catch(err) {}
-
-const createTransformedSvgRect = (svg: SVGSVGElement, matrix: DOMMatrix, x: number, y: number, width: number, height: number) => {
-  const point = svg.createSVGPoint()
-  point.x = x
-  point.y = y
-  const { x: x1, y: y1 } = point.matrixTransform(matrix)
-  point.x += width
-  point.y += height
-  const { x: x2, y: y2 } = point.matrixTransform(matrix)
+const createSvgRect = (svg: SVGSVGElement, x1: number, y1: number, x2: number, y2: number) => {
   const svgRect = svg.createSVGRect()
   svgRect.x = Math.min(x1, x2)
   svgRect.y = Math.min(y1, y2)
@@ -75,75 +56,47 @@ const createTransformedSvgRect = (svg: SVGSVGElement, matrix: DOMMatrix, x: numb
   return svgRect
 }
 
-const clientRectToSvgRect = (svg: SVGSVGElement, clientRect: DOMRect) =>
-  createTransformedSvgRect(svg, svg.getScreenCTM()!.inverse(), clientRect.left, clientRect.top, clientRect.width, clientRect.height)
+const transformSvgRect = (svg: SVGSVGElement, matrix: DOMMatrix, rect: SVGRect) => {
+  const point = svg.createSVGPoint()
+  point.x = rect.x
+  point.y = rect.y
+  const p1 = point.matrixTransform(matrix)
+  point.x += rect.width
+  point.y += rect.height
+  const p2 = point.matrixTransform(matrix)
+  return createSvgRect(svg, p1.x, p1.y, p2.x, p2.y)
+}
+
+const clientRectToSvgRect = (svg: SVGSVGElement, clientRect: SVGRect) =>
+ transformSvgRect(svg, svg.getScreenCTM()!.inverse(), clientRect)
 
 const svgRectToInitialSvgRect = (svg: SVGSVGElement, svgRect: SVGRect) => {
   const ctm = svg.getCTM()
-  return ctm ? createTransformedSvgRect(svg, ctm, svgRect.x, svgRect.y, svgRect.width, svgRect.height) : svgRect
+  return ctm ? transformSvgRect(svg, ctm, svgRect) : svgRect
 }
 
-const _collectElements = (into: SvgDragSelectElement[], svg: SVGSVGElement, ancestor: SVGElement, filter: (element: SvgDragSelectElement) => boolean) => {
-  for (let element = ancestor.firstElementChild; element; element = element.nextElementSibling) {
-    if (element instanceof SVGGElement) {
-      _collectElements(into, svg, element, filter)
-      continue
-    }
-    for (const elementType of svgDragSelectElementTypes) {
-      if (element instanceof elementType && filter(element)) {
-        into.push(element)
-      }
-    }
-  }
-}
-const collectElements = (svg: SVGSVGElement, referenceElement: SVGElement | null, filter: (element: SvgDragSelectElement) => boolean) => {
-  const selected: SvgDragSelectElement[] = []
-  _collectElements(selected, svg, referenceElement || svg, filter)
-  return selected
-}
-const inRange = (x: number, min: number, max: number) => (min <= x && x <= max)
-const enclosures = (areaInSvgCoordinate: SVGRect, bbox: SVGRect) => {
-  const left = areaInSvgCoordinate.x
-  const right = left + areaInSvgCoordinate.width
-  const top = areaInSvgCoordinate.y
-  const bottom = top + areaInSvgCoordinate.height
-  return (
-    inRange(bbox.x, left, right) && inRange(bbox.x + bbox.width, left, right) &&
-    inRange(bbox.y, top, bottom) && inRange(bbox.y + bbox.height, top, bottom)
-  )
-}
-const intersects = (areaInSvgCoordinate: SVGRect, bbox: SVGRect) => {
-  const left = areaInSvgCoordinate.x
-  const right = left + areaInSvgCoordinate.width
-  const top = areaInSvgCoordinate.y
-  const bottom = top + areaInSvgCoordinate.height
-  return (
-    (inRange(bbox.x, left, right) || inRange(bbox.x + bbox.width, left, right) || inRange(left, bbox.x, bbox.x + bbox.width)) &&
-    (inRange(bbox.y, top, bottom) || inRange(bbox.y + bbox.height, top, bottom) || inRange(top, bbox.y, bbox.y + bbox.height))
-  )
-}
-const enclosureListGetter: (svg: SVGSVGElement, referenceElement: SVGElement | null, dragAreaInSvgCoordinate: SVGRect, dragAreaInInitialSvgCoordinate: SVGRect) => () => SvgDragSelectElement[] =
+const enclosureListGetter: (svg: SVGSVGElement, referenceElement: SVGElement | null, areaInSvgCoordinate: SVGRect, areaInInitialSvgCoordinate: SVGRect) => () => SvgDragSelectElement[] =
   SVGSVGElement.prototype.getEnclosureList
-  ? (svg, referenceElement, _, dragAreaInInitialSvgCoordinate) => () => Array.prototype.slice.call(svg.getEnclosureList(dragAreaInInitialSvgCoordinate, referenceElement!))
-  : (svg, referenceElement, dragAreaInSvgCoordinate) => () => collectElements(svg, referenceElement, element => enclosures(dragAreaInSvgCoordinate, element.getBBox()))
-const intersectionListGetter: (svg: SVGSVGElement, referenceElement: SVGElement | null, dragAreaInSvgCoordinate: SVGRect, dragAreaInInitialSvgCoordinate: SVGRect) => () => SvgDragSelectElement[] =
+  ? (svg, referenceElement, _, areaInInitialSvgCoordinate) => () => Array.prototype.slice.call(svg.getEnclosureList(areaInInitialSvgCoordinate, referenceElement!))
+  : (svg, referenceElement, areaInSvgCoordinate) => () => getEnclosures(svg, referenceElement, areaInSvgCoordinate)
+
+const intersectionListGetter: (svg: SVGSVGElement, referenceElement: SVGElement | null, areaInSvgCoordinate: SVGRect, areaInInitialSvgCoordinate: SVGRect) => () => SvgDragSelectElement[] =
   SVGSVGElement.prototype.getIntersectionList
-  ? (svg, referenceElement, _, dragAreaInInitialSvgCoordinate) => () => Array.prototype.slice.call(svg.getIntersectionList(dragAreaInInitialSvgCoordinate, referenceElement!))
-  : (svg, referenceElement, dragAreaInSvgCoordinate) => () => collectElements(svg, referenceElement, element => intersects(dragAreaInSvgCoordinate, element.getBBox()))
+  ? (svg, referenceElement, _, areaInInitialSvgCoordinate) => () => Array.prototype.slice.call(svg.getIntersectionList(areaInInitialSvgCoordinate, referenceElement!))
+  : (svg, referenceElement, areaInSvgCoordinate) => () => getIntersections(svg, referenceElement, areaInSvgCoordinate)
 
 export default (options: SvgDragSelectOptions) => {
   let pointerId: number | undefined
-  let dragStartClientX: number | undefined
-  let dragStartClientY: number | undefined
-  let dragStartScrollX: number | undefined
-  let dragStartScrollY: number | undefined
-  const calculateClientRect = (event: PointerEvent) => {
-    const x1 = dragStartClientX! + dragStartScrollX! - document.documentElement.scrollLeft - document.body.scrollLeft
-    const y1 = dragStartClientY! + dragStartScrollY! - document.documentElement.scrollTop - document.body.scrollTop
-    const x2 = event.clientX
-    const y2 = event.clientY
-    return new DOMRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x1 - x2), Math.abs(y1 - y2))
-  }
+  let dragStartClientXPlusScrollX: number | undefined
+  let dragStartClientYPlusScrollY: number | undefined
+  const svg = options.svg
+  const calculateClientRect = (event: PointerEvent) => createSvgRect(
+    svg,
+    dragStartClientXPlusScrollX! - document.documentElement.scrollLeft - document.body.scrollLeft,
+    dragStartClientYPlusScrollY! - document.documentElement.scrollTop - document.body.scrollTop,
+    event.clientX,
+    event.clientY
+  )
   let selectedElements: ReadonlyArray<SvgDragSelectElement> = []
   const dragAreaOverlay = document.body.appendChild(document.createElement('div'))
   const dragAreaOverlayStyle = dragAreaOverlay.style
@@ -206,10 +159,8 @@ export default (options: SvgDragSelectOptions) => {
       })
       if (!canceled) {
         pointerId = event.pointerId
-        dragStartClientX = event.clientX
-        dragStartClientY = event.clientY
-        dragStartScrollX = document.documentElement.scrollLeft + document.body.scrollLeft
-        dragStartScrollY = document.documentElement.scrollTop + document.body.scrollTop
+        dragStartClientXPlusScrollX = event.clientX + document.documentElement.scrollLeft + document.body.scrollLeft
+        dragStartClientYPlusScrollY = event.clientY + document.documentElement.scrollTop + document.body.scrollTop
         onPointerMove.call(this, event)
         dragAreaOverlayStyle.display = ''
         this.addEventListener('pointermove', onPointerMove, event.pointerType === 'touch' ? nonPassive : undefined)
@@ -239,7 +190,6 @@ export default (options: SvgDragSelectOptions) => {
     }
   }
 
-  const svg = options.svg
   const originalDraggable = svg.getAttribute('draggable')
   const originalPointerEvents = svg.style.pointerEvents
   const originalTouchAction = svg.style.touchAction
