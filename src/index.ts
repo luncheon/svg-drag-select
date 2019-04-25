@@ -4,20 +4,14 @@ export type SvgDragSelectElement = SVGCircleElement | SVGEllipseElement | SVGIma
 export interface SvgDragSelectionStart {
   readonly svg: SVGSVGElement
   readonly pointerEvent: PointerEvent
-  readonly dragStartClientX: number
-  readonly dragStartClientY: number
-  readonly currentClientX: number
-  readonly currentClientY: number
   cancel(): void
 }
 
 export interface SvgDragSelectionEnd {
   readonly svg: SVGSVGElement
   readonly pointerEvent: PointerEvent
-  readonly dragStartClientX: number
-  readonly dragStartClientY: number
-  readonly currentClientX: number
-  readonly currentClientY: number
+  readonly clientRect: DOMRectReadOnly
+  readonly svgRect: SVGRect
   readonly selectedElements: ReadonlyArray<SvgDragSelectElement>
 }
 
@@ -46,10 +40,38 @@ try {
   removeEventListener('t', noop, options);
 } catch(err) {}
 
+const calculateSvgRect = (svg: SVGSVGElement, clientRect: DOMRect) => {
+  const ctm = svg.getCTM()
+  const inverseClientCtm = svg.getScreenCTM()!.inverse()
+  const transformMatrix = ctm ? ctm.multiply(inverseClientCtm) : inverseClientCtm
+  const point = svg.createSVGPoint()
+  point.x = clientRect.left
+  point.y = clientRect.top
+  const { x: x1, y: y1 } = point.matrixTransform(transformMatrix)
+  point.x += clientRect.width
+  point.y += clientRect.height
+  const { x: x2, y: y2 } = point.matrixTransform(transformMatrix)
+  const svgRect = svg.createSVGRect()
+  svgRect.x = Math.min(x1, x2)
+  svgRect.y = Math.min(y1, y2)
+  svgRect.width = Math.abs(x1 - x2)
+  svgRect.height = Math.abs(y1 - y2)
+  return svgRect
+}
 
 export default (options: SvgDragSelectOptions) => {
   let pointerId: number | undefined
-  let dragStartPoint: SVGPoint | undefined
+  let dragStartClientX: number | undefined
+  let dragStartClientY: number | undefined
+  let dragStartScrollX: number | undefined
+  let dragStartScrollY: number | undefined
+  const calculateClientRect = (event: PointerEvent) => {
+    const x1 = dragStartClientX! + dragStartScrollX! - document.documentElement.scrollLeft - document.body.scrollLeft
+    const y1 = dragStartClientY! + dragStartScrollY! - document.documentElement.scrollTop - document.body.scrollTop
+    const x2 = event.clientX
+    const y2 = event.clientY
+    return new DOMRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x1 - x2), Math.abs(y1 - y2))
+  }
   let selectedElements: SvgDragSelectElement[] = []
   const dragAreaOverlay = document.body.appendChild(document.createElement('div'))
   const dragAreaOverlayStyle = dragAreaOverlay.style
@@ -58,36 +80,22 @@ export default (options: SvgDragSelectOptions) => {
   dragAreaOverlayStyle.pointerEvents = 'none'
 
   const onPointerMove = function (this: SVGSVGElement, event: PointerEvent) {
-    if (dragStartPoint && event.pointerId === pointerId) {
+    if (event.pointerId === pointerId) {
       if (event.type === 'pointermove' && event.pointerType === 'touch') {
         event.preventDefault()
       }
-      const currentClientX = event.clientX
-      const currentClientY = event.clientY
-      dragAreaOverlayStyle.left = Math.min(dragStartPoint.x, currentClientX) + 'px'
-      dragAreaOverlayStyle.top = Math.min(dragStartPoint.y, currentClientY) + 'px'
-      dragAreaOverlayStyle.width = Math.abs(dragStartPoint.x - currentClientX) + 'px'
-      dragAreaOverlayStyle.height = Math.abs(dragStartPoint.y - currentClientY) + 'px'
-
-      const ctm = this.getCTM()
-      const inverseClientCtm = this.getScreenCTM()!.inverse()
-      const transformMatrix = ctm ? ctm.multiply(inverseClientCtm) : inverseClientCtm
-      const { x: x1, y: y1 } = dragStartPoint.matrixTransform(transformMatrix)
-      const currentPoint = this.createSVGPoint()
-      currentPoint.x = currentClientX
-      currentPoint.y = currentClientY
-      const { x: x2, y: y2 } = currentPoint.matrixTransform(transformMatrix)
-      const rect = this.createSVGRect()
-      rect.x = Math.min(x1, x2)
-      rect.y = Math.min(y1, y2)
-      rect.width = Math.abs(x1 - x2)
-      rect.height = Math.abs(y1 - y2)
+      const clientRect = calculateClientRect(event)
+      const svgRect = calculateSvgRect(this, clientRect)
       const referenceElement = options.referenceElement || null
       const newSelectedElements = Array.prototype.slice.apply(
         options.intersection
-        ? this.getIntersectionList(rect, referenceElement!)
-        : this.getEnclosureList(rect, referenceElement!)
+        ? this.getIntersectionList(svgRect, referenceElement!)
+        : this.getEnclosureList(svgRect, referenceElement!)
       )
+      dragAreaOverlayStyle.left = clientRect.x + 'px'
+      dragAreaOverlayStyle.top = clientRect.y + 'px'
+      dragAreaOverlayStyle.width = clientRect.width + 'px'
+      dragAreaOverlayStyle.height = clientRect.height + 'px'
       if (
         selectedElements.length !== newSelectedElements.length ||
         selectedElements.some(element => newSelectedElements.indexOf(element) === -1)
@@ -97,10 +105,8 @@ export default (options: SvgDragSelectOptions) => {
         options.onSelectionChange && options.onSelectionChange({
           svg: this,
           pointerEvent: event,
-          dragStartClientX: dragStartPoint.x,
-          dragStartClientY: dragStartPoint.y,
-          currentClientX,
-          currentClientY,
+          clientRect,
+          svgRect,
           selectedElements,
           previousSelectedElements,
         })
@@ -110,28 +116,23 @@ export default (options: SvgDragSelectOptions) => {
 
   const onPointerDown = function (this: SVGSVGElement, event: PointerEvent) {
     if (event.isPrimary && pointerId === undefined) {
-      const { clientX: x, clientY: y } = event
-      let canceled: any
+      let canceled: boolean | undefined
       options.onSelectionStart && options.onSelectionStart({
         svg: this,
         pointerEvent: event,
-        dragStartClientX: x,
-        dragStartClientY: y,
-        currentClientX: x,
-        currentClientY: y,
         cancel: () => canceled = true,
       })
-      if (canceled) {
-        return
+      if (!canceled) {
+        pointerId = event.pointerId
+        dragStartClientX = event.clientX
+        dragStartClientY = event.clientY
+        dragStartScrollX = document.documentElement.scrollLeft + document.body.scrollLeft
+        dragStartScrollY = document.documentElement.scrollTop + document.body.scrollTop
+        onPointerMove.call(this, event)
+        dragAreaOverlayStyle.display = ''
+        this.addEventListener('pointermove', onPointerMove, event.pointerType === 'touch' ? nonPassive : undefined)
+        this.setPointerCapture(pointerId)
       }
-      pointerId = event.pointerId
-      dragStartPoint = this.createSVGPoint()
-      dragStartPoint.x = x
-      dragStartPoint.y = y
-      onPointerMove.call(this, event)
-      dragAreaOverlayStyle.display = ''
-      this.addEventListener('pointermove', onPointerMove, event.pointerType === 'touch' ? nonPassive : undefined)
-      this.setPointerCapture(event.pointerId)
     }
   }
 
@@ -141,19 +142,15 @@ export default (options: SvgDragSelectOptions) => {
       this.removeEventListener('pointermove', onPointerMove)
       pointerId = undefined
       dragAreaOverlayStyle.display = 'none'
-      if (dragStartPoint) {
-        const _dragStartPoint = dragStartPoint
-        dragStartPoint = undefined
-        options.onSelectionEnd && options.onSelectionEnd({
-          svg: this,
-          pointerEvent: event,
-          dragStartClientX: _dragStartPoint.x,
-          dragStartClientY: _dragStartPoint.y,
-          currentClientX: event.clientX,
-          currentClientY: event.clientY,
-          selectedElements,
-        })
-      }
+      const clientRect = calculateClientRect(event)
+      const svgRect = calculateSvgRect(this, clientRect)
+      options.onSelectionEnd && options.onSelectionEnd({
+        svg: this,
+        pointerEvent: event,
+        clientRect,
+        svgRect,
+        selectedElements,
+      })
     }
   }
 
