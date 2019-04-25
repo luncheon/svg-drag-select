@@ -3,15 +3,9 @@
 A vanilla-js module for adding select-on-drag behavior to inline SVG elements.  
 [Demo](https://luncheon.github.io/svg-drag-select/)
 
-This simply listens Pointer Events and calls [`getEnclosureList()`](https://www.w3.org/TR/SVG11/struct.html#__svg__SVGSVGElement__getEnclosureList) or [`getIntersectionList()`](https://www.w3.org/TR/SVG11/struct.html#__svg__SVGSVGElement__getIntersectionList).
-
-* Lightweight (~ 1.1 kB minified gzipped)
+* Lightweight (~ 1.6 kB minified gzipped)
   * Currently, [Pointer Events Polyfill](https://github.com/jquery/PEP) is required for Safari (but [Safari seems to support Pointer Events soon](https://webkit.org/blog/8676/release-notes-for-safari-technology-preview-78/)).  
     No other dependencies.
-* Works correctly on IE 11.
-
-⚠️ [Firefox does not support `getIntersectionList()` and `getEnclosureList()`.](https://bugzilla.mozilla.org/show_bug.cgi?id=501421)  
-⚠️ Chrome and Safari's `getIntersectionList()` implementation is poor. IE 11 seems to be good.  
 
 
 ## Installation
@@ -49,12 +43,13 @@ const {
                     // this element has "svg-drag-select-area-overlay" class by default.
 } = svgDragSelect({
   // the svg element (required).
-  svg: document.querySelector("svg#so-sexy-svg"),
+  svg: document.getElementById("so-sexy-svg"),
 
   // followings are optional parameters with default values.
   referenceElement: null,     // selects only descendants of this SVGElement if specified.
-  intersection: false,        // falsy:  selects enclosed elements.
-                              // truthy: selects intersected elements.
+  selector: "enclosure",      // "enclosure": selects enclosed elements using getEnclosureList().
+                              // "intersection": selects intersected elements using getIntersectionList().
+                              // function: custom selector implementation
 
   // followings are optional selection handlers
   onSelectionStart({
@@ -95,6 +90,69 @@ const {
   border: 1px dotted gray;
   background-color: rgba(255,255,255,.4);
 }
+```
+
+### Custom Selector
+
+You may need to implement your own selector function because:
+
+* Chrome and Safari's `getIntersectionList()` implementation is poor: they seem to check only bounding boxes.  
+  (BTW, IE 11 seems to have a good implementation...)
+* If `SVGSVGElement.prototype.getIntersectionList` or `SVGSVGElement.prototype.getEnclosureList` is not available, `svg-drag-select` uses own implementation that checks only bounding boxes.
+  * [Firefox does not yet support `getIntersectionList()` and `getEnclosureList()`.](https://bugzilla.mozilla.org/show_bug.cgi?id=501421)
+* Implementing a good selector is so hard for me because stricity and performance are in a trade-off relationship.
+
+The following is a custom selector example written for [demo](https://luncheon.github.io/svg-drag-select/).
+
+```js
+const strictIntersectionSelector = ({
+  svg,                            // the svg element.
+  referenceElement,               // please select only descendants of this SVGElement if specified.
+  pointerEvent,                   // either a "pointerdown" event or a "pointermove" event.
+  dragAreaInClientCoordinate,     // a `DOMRect` that represents the dragging area in client coordinate.
+  dragAreaInSvgCoordinate,        // a `SVGRect` that represents the dragging area in svg coordinate.
+  dragAreaInInitialSvgCoordinate, // a `SVGRect` that represents the dragging area in initial viewport coordinate of the svg.
+  getEnclosures,                  // `getEnclosures()` returns elements enclosed in the dragging area.
+  getIntersections,               // `getIntersections()` returns elements intersect the dragging area.
+                                  // Chrome, Safari and Firefox checks only bounding box intersection.
+}) => getIntersections().filter(element => {
+  // the element that the pointer event raised is considered to intersect.
+  if (pointerEvent.target === element) {
+    return true
+  }
+  // strictly check only <path>s.
+  if (!(element instanceof SVGPathElement)) {
+    return true
+  }
+  // check if there is at least one enclosed point in the path.
+  for (let i = 0, len = element.getTotalLength(); i <= len; i += 4 /* arbitrary */) {
+    const { x, y } = element.getPointAtLength(i)
+    if (
+        dragAreaInSvgCoordinate.x <= x && x <= dragAreaInSvgCoordinate.x + dragAreaInSvgCoordinate.width &&
+        dragAreaInSvgCoordinate.y <= y && y <= dragAreaInSvgCoordinate.y + dragAreaInSvgCoordinate.height
+    ) {
+      return true
+    }
+  }
+  return false
+})
+
+svgDragSelect({
+  svg: document.getElementById("so-sexy-svg"),
+  selector: strictIntersectionSelector,
+  onSelectionChange({
+    selectedElements,
+    previousSelectedElements
+  }) {
+    [...selectedElements, ...previousSelectedElements].forEach(element => {
+      if (selectedElements.indexOf(element) !== -1) {
+        element.setAttribute('data-selected', '')
+      } else {
+        element.removeAttribute('data-selected')
+      }
+    })
+  }
+})
 ```
 
 

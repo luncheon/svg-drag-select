@@ -38,12 +38,16 @@ main {
   width: fit-content;
   padding-right: 10rem;
 }
+svg {
+  width: 150vw;
+  height: 75vw;
+}
 path { fill: #ddd; stroke: #888; }
 path[data-selected] { fill: #f84f79; }
 .svg-drag-select-area-overlay {
   border: 1px dotted gray;
   background-color: rgba(255,255,255,.4)
-}</style></head><body><header><h1>svg-drag-select<a href="https://github.com/luncheon/svg-drag-select"><img src="https://cdn.jsdelivr.net/npm/octicons@7.0.1/build/svg/mark-github.svg" alt="GitHub" style="width: 2.5rem; height: 2.5rem; margin-left: 1rem; vertical-align: bottom;"></a><div style="flex: auto"></div></h1><p>A vanilla-js module for adding select-on-drag behavior to inline SVG elements.</p><label><input type="radio" name="intersection" checked onchange="window.svgDragSelectOptions.intersection = !this.checked">&nbsp;enclosure</label><label><input type="radio" name="intersection" onchange="window.svgDragSelectOptions.intersection = this.checked">&nbsp;intersection</label></header><main><!--
+}</style></head><body><header><h1>svg-drag-select<a href="https://github.com/luncheon/svg-drag-select"><img src="https://cdn.jsdelivr.net/npm/octicons@7.0.1/build/svg/mark-github.svg" alt="GitHub" style="width: 2.5rem; height: 2.5rem; margin-left: 1rem; vertical-align: bottom;"></a><div style="flex: auto"></div></h1><p>A vanilla-js module for adding select-on-drag behavior to inline SVG elements.</p><label><input type="radio" name="selector" value="enclosure" checked onchange="window.svgDragSelectOptions.selector = 'enclosure'">&nbsp;enclosure</label><label><input type="radio" name="selector" value="intersection">&nbsp;intersection</label><label><input type="radio" name="selector" value="">&nbsp;custom function (strict intersection)</label></header><main><!--
 *************Map created by Simplemaps.com********************
 *************Attribution is highly appreciated!***************
 *************http://simplemaps.com****************************
@@ -1626,12 +1630,36 @@ THE SOFTWARE.
      style="fill-rule:evenodd" />
 </svg>
 </main><textarea id="selected-items" disabled></textarea><script>addEventListener('load', function () {
-  var headerHeight = document.getElementsByTagName('header')[0].offsetHeight
+  const headerHeight = document.getElementsByTagName('header')[0].offsetHeight
   document.getElementsByTagName('main')[0].style.marginTop = headerHeight + 'px'
   document.getElementById('selected-items').style.top = headerHeight + 'px'
-})</script><script src="https://cdn.jsdelivr.net/npm/pepjs@0.5.2"></script><script src="./index.min.js"></script><script>window.svgDragSelectOptions = {
+})</script><script src="https://cdn.jsdelivr.net/npm/pepjs@0.5.2"></script><script src="./index.min.js"></script><script>function strictIntersectionSelector(context) {
+  const dragAreaInSvgCoordinate = context.dragAreaInSvgCoordinate
+  return context.getIntersections().filter(function (element) {
+    if (context.pointerEvent.target === element) {
+      return true
+    }
+    if (!(element instanceof SVGPathElement)) {
+      // strictly check only <path>s.
+      return true
+    }
+    for (let i = 0, len = element.getTotalLength(); i <= len; i += 4 /* arbitrary */) {
+      const point = element.getPointAtLength(i)
+      const x = point.x
+      const y = point.y
+      if (
+          dragAreaInSvgCoordinate.x <= x && x <= dragAreaInSvgCoordinate.x + dragAreaInSvgCoordinate.width &&
+          dragAreaInSvgCoordinate.y <= y && y <= dragAreaInSvgCoordinate.y + dragAreaInSvgCoordinate.height
+      ) {
+        return true
+      }
+    }
+    return false
+  })
+}
+
+window.svgDragSelectOptions = {
   svg: document.getElementsByTagName('svg')[0],
-  intersection: false,
   onSelectionStart: function (selectionStart) {
     console.log("onSelectionStart", selectionStart)
   },
@@ -1658,4 +1686,9 @@ THE SOFTWARE.
       .join('\n')
   },
 }
+Object.defineProperty(window.svgDragSelectOptions, 'selector', {
+  get: function () {
+    return document.querySelector('input[name=selector]:checked').value || strictIntersectionSelector
+  }
+})
 svgDragSelect(window.svgDragSelectOptions)</script></body></html>

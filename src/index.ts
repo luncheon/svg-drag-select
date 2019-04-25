@@ -1,17 +1,36 @@
 // export type SvgDragSelectElement = ReturnType<SVGSVGElement["getIntersectionList"]> extends NodeListOf<infer T> ? T : never
 export type SvgDragSelectElement = SVGCircleElement | SVGEllipseElement | SVGImageElement | SVGLineElement | SVGPathElement | SVGPolygonElement | SVGPolylineElement | SVGRectElement | SVGTextElement | SVGUseElement
+const svgDragSelectElementTypes = [SVGCircleElement, SVGEllipseElement, SVGImageElement, SVGLineElement, SVGPathElement, SVGPolygonElement, SVGPolylineElement, SVGRectElement, SVGTextElement, SVGUseElement]
 
 export interface SvgDragSelectionStart {
   readonly svg: SVGSVGElement
+  readonly referenceElement: SVGElement | null
   readonly pointerEvent: PointerEvent
   cancel(): void
 }
 
+export interface SvgDragSelectSelectorContext {
+  readonly svg: SVGSVGElement
+  readonly referenceElement: SVGElement | null
+  readonly pointerEvent: PointerEvent
+  readonly dragAreaInClientCoordinate: DOMRect
+  readonly dragAreaInSvgCoordinate: SVGRect
+  readonly dragAreaInInitialSvgCoordinate: SVGRect
+  getEnclosures(): SvgDragSelectElement[]
+  getIntersections(): SvgDragSelectElement[]
+}
+
+export interface SvgDragSelectSelector<T = SvgDragSelectElement> {
+  (context: SvgDragSelectSelectorContext): ReadonlyArray<SvgDragSelectElement>
+}
+
 export interface SvgDragSelectionEnd {
   readonly svg: SVGSVGElement
+  readonly referenceElement: SVGElement | null
   readonly pointerEvent: PointerEvent
-  readonly clientRect: DOMRectReadOnly
-  readonly svgRect: SVGRect
+  readonly dragAreaInClientCoordinate: DOMRect
+  readonly dragAreaInSvgCoordinate: SVGRect
+  readonly dragAreaInInitialSvgCoordinate: SVGRect
   readonly selectedElements: ReadonlyArray<SvgDragSelectElement>
 }
 
@@ -19,13 +38,13 @@ export interface SvgDragSelectionChange extends SvgDragSelectionEnd {
   readonly previousSelectedElements: ReadonlyArray<SvgDragSelectElement>
 }
 
-export interface SvgDragSelectOptions {
+export interface SvgDragSelectOptions<T = SvgDragSelectElement> {
   readonly svg: SVGSVGElement
   readonly referenceElement?: SVGElement
   readonly onSelectionStart?: (event: SvgDragSelectionStart) => any
   readonly onSelectionChange?: (event: SvgDragSelectionChange) => any
   readonly onSelectionEnd?: (event: SvgDragSelectionEnd) => any
-  readonly intersection?: boolean
+  readonly selector?: 'intersection' | 'enclosure' | SvgDragSelectSelector<T>
 }
 
 let nonPassive: { passive: false } | undefined
@@ -40,17 +59,14 @@ try {
   removeEventListener('t', noop, options);
 } catch(err) {}
 
-const calculateSvgRect = (svg: SVGSVGElement, clientRect: DOMRect) => {
-  const ctm = svg.getCTM()
-  const inverseClientCtm = svg.getScreenCTM()!.inverse()
-  const transformMatrix = ctm ? ctm.multiply(inverseClientCtm) : inverseClientCtm
+const createTransformedSvgRect = (svg: SVGSVGElement, matrix: DOMMatrix, x: number, y: number, width: number, height: number) => {
   const point = svg.createSVGPoint()
-  point.x = clientRect.left
-  point.y = clientRect.top
-  const { x: x1, y: y1 } = point.matrixTransform(transformMatrix)
-  point.x += clientRect.width
-  point.y += clientRect.height
-  const { x: x2, y: y2 } = point.matrixTransform(transformMatrix)
+  point.x = x
+  point.y = y
+  const { x: x1, y: y1 } = point.matrixTransform(matrix)
+  point.x += width
+  point.y += height
+  const { x: x2, y: y2 } = point.matrixTransform(matrix)
   const svgRect = svg.createSVGRect()
   svgRect.x = Math.min(x1, x2)
   svgRect.y = Math.min(y1, y2)
@@ -58,6 +74,62 @@ const calculateSvgRect = (svg: SVGSVGElement, clientRect: DOMRect) => {
   svgRect.height = Math.abs(y1 - y2)
   return svgRect
 }
+
+const clientRectToSvgRect = (svg: SVGSVGElement, clientRect: DOMRect) =>
+  createTransformedSvgRect(svg, svg.getScreenCTM()!.inverse(), clientRect.left, clientRect.top, clientRect.width, clientRect.height)
+
+const svgRectToInitialSvgRect = (svg: SVGSVGElement, svgRect: SVGRect) => {
+  const ctm = svg.getCTM()
+  return ctm ? createTransformedSvgRect(svg, ctm, svgRect.x, svgRect.y, svgRect.width, svgRect.height) : svgRect
+}
+
+const _collectElements = (into: SvgDragSelectElement[], svg: SVGSVGElement, ancestor: SVGElement, filter: (element: SvgDragSelectElement) => boolean) => {
+  for (let element = ancestor.firstElementChild; element; element = element.nextElementSibling) {
+    if (element instanceof SVGGElement) {
+      _collectElements(into, svg, element, filter)
+      continue
+    }
+    for (const elementType of svgDragSelectElementTypes) {
+      if (element instanceof elementType && filter(element)) {
+        into.push(element)
+      }
+    }
+  }
+}
+const collectElements = (svg: SVGSVGElement, referenceElement: SVGElement | null, filter: (element: SvgDragSelectElement) => boolean) => {
+  const selected: SvgDragSelectElement[] = []
+  _collectElements(selected, svg, referenceElement || svg, filter)
+  return selected
+}
+const inRange = (x: number, min: number, max: number) => (min <= x && x <= max)
+const enclosures = (areaInSvgCoordinate: SVGRect, bbox: SVGRect) => {
+  const left = areaInSvgCoordinate.x
+  const right = left + areaInSvgCoordinate.width
+  const top = areaInSvgCoordinate.y
+  const bottom = top + areaInSvgCoordinate.height
+  return (
+    inRange(bbox.x, left, right) && inRange(bbox.x + bbox.width, left, right) &&
+    inRange(bbox.y, top, bottom) && inRange(bbox.y + bbox.height, top, bottom)
+  )
+}
+const intersects = (areaInSvgCoordinate: SVGRect, bbox: SVGRect) => {
+  const left = areaInSvgCoordinate.x
+  const right = left + areaInSvgCoordinate.width
+  const top = areaInSvgCoordinate.y
+  const bottom = top + areaInSvgCoordinate.height
+  return (
+    (inRange(bbox.x, left, right) || inRange(bbox.x + bbox.width, left, right) || inRange(left, bbox.x, bbox.x + bbox.width)) &&
+    (inRange(bbox.y, top, bottom) || inRange(bbox.y + bbox.height, top, bottom) || inRange(top, bbox.y, bbox.y + bbox.height))
+  )
+}
+const enclosureListGetter: (svg: SVGSVGElement, referenceElement: SVGElement | null, dragAreaInSvgCoordinate: SVGRect, dragAreaInInitialSvgCoordinate: SVGRect) => () => SvgDragSelectElement[] =
+  SVGSVGElement.prototype.getEnclosureList
+  ? (svg, referenceElement, _, dragAreaInInitialSvgCoordinate) => () => Array.prototype.slice.call(svg.getEnclosureList(dragAreaInInitialSvgCoordinate, referenceElement!))
+  : (svg, referenceElement, dragAreaInSvgCoordinate) => () => collectElements(svg, referenceElement, element => enclosures(dragAreaInSvgCoordinate, element.getBBox()))
+const intersectionListGetter: (svg: SVGSVGElement, referenceElement: SVGElement | null, dragAreaInSvgCoordinate: SVGRect, dragAreaInInitialSvgCoordinate: SVGRect) => () => SvgDragSelectElement[] =
+  SVGSVGElement.prototype.getIntersectionList
+  ? (svg, referenceElement, _, dragAreaInInitialSvgCoordinate) => () => Array.prototype.slice.call(svg.getIntersectionList(dragAreaInInitialSvgCoordinate, referenceElement!))
+  : (svg, referenceElement, dragAreaInSvgCoordinate) => () => collectElements(svg, referenceElement, element => intersects(dragAreaInSvgCoordinate, element.getBBox()))
 
 export default (options: SvgDragSelectOptions) => {
   let pointerId: number | undefined
@@ -72,7 +144,7 @@ export default (options: SvgDragSelectOptions) => {
     const y2 = event.clientY
     return new DOMRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x1 - x2), Math.abs(y1 - y2))
   }
-  let selectedElements: SvgDragSelectElement[] = []
+  let selectedElements: ReadonlyArray<SvgDragSelectElement> = []
   const dragAreaOverlay = document.body.appendChild(document.createElement('div'))
   const dragAreaOverlayStyle = dragAreaOverlay.style
   dragAreaOverlay.className = 'svg-drag-select-area-overlay'
@@ -84,18 +156,25 @@ export default (options: SvgDragSelectOptions) => {
       if (event.type === 'pointermove' && event.pointerType === 'touch') {
         event.preventDefault()
       }
-      const clientRect = calculateClientRect(event)
-      const svgRect = calculateSvgRect(this, clientRect)
+      const dragAreaInClientCoordinate = calculateClientRect(event)
+      const dragAreaInSvgCoordinate = clientRectToSvgRect(this, dragAreaInClientCoordinate)
+      const dragAreaInInitialSvgCoordinate = svgRectToInitialSvgRect(this, dragAreaInSvgCoordinate)
       const referenceElement = options.referenceElement || null
-      const newSelectedElements = Array.prototype.slice.apply(
-        options.intersection
-        ? this.getIntersectionList(svgRect, referenceElement!)
-        : this.getEnclosureList(svgRect, referenceElement!)
-      )
-      dragAreaOverlayStyle.left = clientRect.x + 'px'
-      dragAreaOverlayStyle.top = clientRect.y + 'px'
-      dragAreaOverlayStyle.width = clientRect.width + 'px'
-      dragAreaOverlayStyle.height = clientRect.height + 'px'
+      const newSelectedElements =
+        typeof options.selector === 'function' ? options.selector({
+          svg: this,
+          referenceElement,
+          pointerEvent: event,
+          dragAreaInClientCoordinate,
+          dragAreaInSvgCoordinate,
+          dragAreaInInitialSvgCoordinate,
+          getEnclosures: enclosureListGetter(this, referenceElement, dragAreaInSvgCoordinate, dragAreaInInitialSvgCoordinate),
+          getIntersections: intersectionListGetter(this, referenceElement, dragAreaInSvgCoordinate, dragAreaInInitialSvgCoordinate)
+        }) : (options.selector === 'intersection' ? intersectionListGetter : enclosureListGetter)(this, referenceElement, dragAreaInSvgCoordinate, dragAreaInInitialSvgCoordinate)()
+      dragAreaOverlayStyle.left = dragAreaInClientCoordinate.x + 'px'
+      dragAreaOverlayStyle.top = dragAreaInClientCoordinate.y + 'px'
+      dragAreaOverlayStyle.width = dragAreaInClientCoordinate.width + 'px'
+      dragAreaOverlayStyle.height = dragAreaInClientCoordinate.height + 'px'
       if (
         selectedElements.length !== newSelectedElements.length ||
         selectedElements.some(element => newSelectedElements.indexOf(element) === -1)
@@ -104,9 +183,11 @@ export default (options: SvgDragSelectOptions) => {
         selectedElements = newSelectedElements
         options.onSelectionChange && options.onSelectionChange({
           svg: this,
+          referenceElement,
           pointerEvent: event,
-          clientRect,
-          svgRect,
+          dragAreaInClientCoordinate,
+          dragAreaInSvgCoordinate,
+          dragAreaInInitialSvgCoordinate,
           selectedElements,
           previousSelectedElements,
         })
@@ -119,6 +200,7 @@ export default (options: SvgDragSelectOptions) => {
       let canceled: boolean | undefined
       options.onSelectionStart && options.onSelectionStart({
         svg: this,
+        referenceElement: options.referenceElement || null,
         pointerEvent: event,
         cancel: () => canceled = true,
       })
@@ -142,13 +224,16 @@ export default (options: SvgDragSelectOptions) => {
       this.removeEventListener('pointermove', onPointerMove)
       pointerId = undefined
       dragAreaOverlayStyle.display = 'none'
-      const clientRect = calculateClientRect(event)
-      const svgRect = calculateSvgRect(this, clientRect)
+      const dragAreaInClientCoordinate = calculateClientRect(event)
+      const dragAreaInSvgCoordinate = clientRectToSvgRect(this, dragAreaInClientCoordinate)
+      const dragAreaInInitialSvgCoordinate = svgRectToInitialSvgRect(this, dragAreaInSvgCoordinate)
       options.onSelectionEnd && options.onSelectionEnd({
         svg: this,
+        referenceElement: options.referenceElement || null,
         pointerEvent: event,
-        clientRect,
-        svgRect,
+        dragAreaInClientCoordinate,
+        dragAreaInSvgCoordinate,
+        dragAreaInInitialSvgCoordinate,
         selectedElements,
       })
     }
