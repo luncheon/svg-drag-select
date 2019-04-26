@@ -146,20 +146,8 @@ const strictIntersectionSelector = ({
 })
 
 svgDragSelect({
-  svg: document.getElementById("so-sexy-svg"),
   selector: strictIntersectionSelector,
-  onSelectionChange({
-    selectedElements,
-    newlySelectedElements,
-    newlyDeselectedElements,
-  }) {
-    selectionChange.newlyDeselectedElements.forEach(function (element) {
-      element.removeAttribute('data-selected')
-    })
-    selectionChange.newlySelectedElements.forEach(function (element) {
-      element.setAttribute('data-selected', '')
-    })
-  }
+  /* ... */
 })
 ```
 
