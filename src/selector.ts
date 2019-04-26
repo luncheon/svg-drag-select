@@ -3,10 +3,10 @@ export type SvgDragSelectElement = SVGCircleElement | SVGEllipseElement | SVGIma
 
 export const svgDragSelectElementTypes = [SVGCircleElement, SVGEllipseElement, SVGImageElement, SVGLineElement, SVGPathElement, SVGPolygonElement, SVGPolylineElement, SVGRectElement, SVGTextElement, SVGUseElement]
 
-const _collectElements = (into: SvgDragSelectElement[], svg: SVGSVGElement, ancestor: SVGElement, filter: (element: SvgDragSelectElement) => boolean) => {
+const collectElements = (into: SvgDragSelectElement[], svg: SVGSVGElement, ancestor: SVGElement, filter: (element: SvgDragSelectElement) => boolean) => {
   for (let element = ancestor.firstElementChild; element; element = element.nextElementSibling) {
     if (element instanceof SVGGElement) {
-      _collectElements(into, svg, element, filter)
+      collectElements(into, svg, element, filter)
       continue
     }
     for (const elementType of svgDragSelectElementTypes) {
@@ -15,12 +15,7 @@ const _collectElements = (into: SvgDragSelectElement[], svg: SVGSVGElement, ance
       }
     }
   }
-}
-
-const collectElements = (svg: SVGSVGElement, referenceElement: SVGElement | null, filter: (element: SvgDragSelectElement) => boolean) => {
-  const selected: SvgDragSelectElement[] = []
-  _collectElements(selected, svg, referenceElement || svg, filter)
-  return selected
+  return into
 }
 
 const inRange = (x: number, min: number, max: number) => (min <= x && x <= max)
@@ -47,10 +42,22 @@ const intersects = (areaInSvgCoordinate: SVGRect, bbox: SVGRect) => {
   )
 }
 
-export const getEnclosures =
-  (svg: SVGSVGElement, referenceElement: SVGElement | null, areaInSvgCoordinate: SVGRect) =>
-  collectElements(svg, referenceElement, element => enclosures(areaInSvgCoordinate, element.getBBox()))
+export const getEnclosures = (
+  svg: SVGSVGElement,
+  referenceElement: SVGElement | null,
+  areaInSvgCoordinate: SVGRect,
+  areaInInitialSvgCoordinate: SVGRect,
+) =>
+  svg.getEnclosureList
+    ? Array.prototype.slice.call(svg.getEnclosureList(areaInInitialSvgCoordinate, referenceElement!))
+    : collectElements([], svg, referenceElement || svg, element => enclosures(areaInSvgCoordinate, element.getBBox()))
 
-export const getIntersections =
-  (svg: SVGSVGElement, referenceElement: SVGElement | null, areaInSvgCoordinate: SVGRect) =>
-  collectElements(svg, referenceElement, element => intersects(areaInSvgCoordinate, element.getBBox()))
+export const getIntersections = (
+  svg: SVGSVGElement,
+  referenceElement: SVGElement | null,
+  areaInSvgCoordinate: SVGRect,
+  areaInInitialSvgCoordinate: SVGRect,
+) =>
+  svg.getIntersectionList
+    ? Array.prototype.slice.call(svg.getIntersectionList(areaInInitialSvgCoordinate, referenceElement!))
+    : collectElements([], svg, referenceElement || svg, element => intersects(areaInSvgCoordinate, element.getBBox()))

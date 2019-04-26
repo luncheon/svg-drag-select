@@ -61,7 +61,10 @@ const createSvgRect = (svg: SVGSVGElement, x1: number, y1: number, x2: number, y
   return svgRect
 }
 
-const transformSvgRect = (svg: SVGSVGElement, matrix: DOMMatrix, rect: SVGRect) => {
+const transformSvgRect = (svg: SVGSVGElement, matrix: DOMMatrix | null, rect: SVGRect) => {
+  if (!matrix) {
+    return rect
+  }
   const point = svg.createSVGPoint()
   point.x = rect.x
   point.y = rect.y
@@ -71,24 +74,6 @@ const transformSvgRect = (svg: SVGSVGElement, matrix: DOMMatrix, rect: SVGRect) 
   const p2 = point.matrixTransform(matrix)
   return createSvgRect(svg, p1.x, p1.y, p2.x, p2.y)
 }
-
-const clientRectToSvgRect = (svg: SVGSVGElement, clientRect: SVGRect) =>
-  transformSvgRect(svg, svg.getScreenCTM()!.inverse(), clientRect)
-
-const svgRectToInitialSvgRect = (svg: SVGSVGElement, svgRect: SVGRect) => {
-  const ctm = svg.getCTM()
-  return ctm ? transformSvgRect(svg, ctm, svgRect) : svgRect
-}
-
-const enclosureListGetter: (svg: SVGSVGElement, referenceElement: SVGElement | null, areaInSvgCoordinate: SVGRect, areaInInitialSvgCoordinate: SVGRect) => () => SvgDragSelectElement[] =
-  SVGSVGElement.prototype.getEnclosureList
-  ? (svg, referenceElement, _, areaInInitialSvgCoordinate) => () => Array.prototype.slice.call(svg.getEnclosureList(areaInInitialSvgCoordinate, referenceElement!))
-  : (svg, referenceElement, areaInSvgCoordinate) => () => getEnclosures(svg, referenceElement, areaInSvgCoordinate)
-
-const intersectionListGetter: (svg: SVGSVGElement, referenceElement: SVGElement | null, areaInSvgCoordinate: SVGRect, areaInInitialSvgCoordinate: SVGRect) => () => SvgDragSelectElement[] =
-  SVGSVGElement.prototype.getIntersectionList
-  ? (svg, referenceElement, _, areaInInitialSvgCoordinate) => () => Array.prototype.slice.call(svg.getIntersectionList(areaInInitialSvgCoordinate, referenceElement!))
-  : (svg, referenceElement, areaInSvgCoordinate) => () => getIntersections(svg, referenceElement, areaInSvgCoordinate)
 
 export default (options: SvgDragSelectOptions) => {
   let pointerId: number | undefined
@@ -115,9 +100,11 @@ export default (options: SvgDragSelectOptions) => {
         event.preventDefault()
       }
       const dragAreaInClientCoordinate = calculateClientRect(event)
-      const dragAreaInSvgCoordinate = clientRectToSvgRect(this, dragAreaInClientCoordinate)
-      const dragAreaInInitialSvgCoordinate = svgRectToInitialSvgRect(this, dragAreaInSvgCoordinate)
+      const dragAreaInSvgCoordinate = transformSvgRect(this, this.getScreenCTM()!.inverse(), dragAreaInClientCoordinate)
+      const dragAreaInInitialSvgCoordinate = transformSvgRect(this, this.getCTM(), dragAreaInSvgCoordinate)
       const referenceElement = options.referenceElement || null
+      const _getEnclosures = () => getEnclosures(this, referenceElement, dragAreaInSvgCoordinate, dragAreaInInitialSvgCoordinate)
+      const _getIntersections = () => getIntersections(this, referenceElement, dragAreaInSvgCoordinate, dragAreaInInitialSvgCoordinate)
       const newSelectedElements =
         typeof options.selector === 'function' ? options.selector({
           svg: this,
@@ -126,15 +113,15 @@ export default (options: SvgDragSelectOptions) => {
           dragAreaInClientCoordinate,
           dragAreaInSvgCoordinate,
           dragAreaInInitialSvgCoordinate,
-          getEnclosures: enclosureListGetter(this, referenceElement, dragAreaInSvgCoordinate, dragAreaInInitialSvgCoordinate),
-          getIntersections: intersectionListGetter(this, referenceElement, dragAreaInSvgCoordinate, dragAreaInInitialSvgCoordinate)
-        }) : (options.selector === 'intersection' ? intersectionListGetter : enclosureListGetter)(this, referenceElement, dragAreaInSvgCoordinate, dragAreaInInitialSvgCoordinate)()
+          getEnclosures: _getEnclosures,
+          getIntersections: _getIntersections,
+        }) : options.selector === 'intersection' ? _getIntersections() : _getEnclosures()
+      const newlySelectedElements = exclude(newSelectedElements, selectedElements)
+      const newlyDeselectedElements = exclude(selectedElements, newSelectedElements)
       dragAreaOverlayStyle.left = dragAreaInClientCoordinate.x + 'px'
       dragAreaOverlayStyle.top = dragAreaInClientCoordinate.y + 'px'
       dragAreaOverlayStyle.width = dragAreaInClientCoordinate.width + 'px'
       dragAreaOverlayStyle.height = dragAreaInClientCoordinate.height + 'px'
-      const newlySelectedElements = exclude(newSelectedElements, selectedElements)
-      const newlyDeselectedElements = exclude(selectedElements, newSelectedElements)
       if (newlySelectedElements.length || newlyDeselectedElements.length) {
         const previousSelectedElements = selectedElements
         selectedElements = newSelectedElements
@@ -147,8 +134,8 @@ export default (options: SvgDragSelectOptions) => {
           dragAreaInInitialSvgCoordinate,
           selectedElements,
           previousSelectedElements,
-          newlySelectedElements: exclude(selectedElements, previousSelectedElements),
-          newlyDeselectedElements: exclude(previousSelectedElements, selectedElements),
+          newlySelectedElements,
+          newlyDeselectedElements,
         })
       }
     }
@@ -156,12 +143,12 @@ export default (options: SvgDragSelectOptions) => {
 
   const onPointerDown = function (this: SVGSVGElement, event: PointerEvent) {
     if (event.isPrimary && pointerId === undefined) {
-      let canceled: boolean | undefined
+      let canceled: number | undefined
       options.onSelectionStart && options.onSelectionStart({
         svg: this,
         referenceElement: options.referenceElement || null,
         pointerEvent: event,
-        cancel: () => canceled = true,
+        cancel: () => canceled = 1,
       })
       if (!canceled) {
         pointerId = event.pointerId
@@ -183,8 +170,8 @@ export default (options: SvgDragSelectOptions) => {
       pointerId = undefined
       dragAreaOverlayStyle.display = 'none'
       const dragAreaInClientCoordinate = calculateClientRect(event)
-      const dragAreaInSvgCoordinate = clientRectToSvgRect(this, dragAreaInClientCoordinate)
-      const dragAreaInInitialSvgCoordinate = svgRectToInitialSvgRect(this, dragAreaInSvgCoordinate)
+      const dragAreaInSvgCoordinate = transformSvgRect(this, this.getScreenCTM()!.inverse(), dragAreaInClientCoordinate)
+      const dragAreaInInitialSvgCoordinate = transformSvgRect(this, this.getCTM(), dragAreaInSvgCoordinate)
       options.onSelectionEnd && options.onSelectionEnd({
         svg: this,
         referenceElement: options.referenceElement || null,
