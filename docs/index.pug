@@ -92,8 +92,7 @@ html
         document.getElementById('selected-items').style.top = headerHeight + 'px'
       })
     script(src="https://cdn.jsdelivr.net/npm/pepjs@0.5.2")
-    //- script(src=`https://cdn.jsdelivr.net/npm/${name}@${version}`)
-    script(src="./index.min.js")
+    script(src=`https://cdn.jsdelivr.net/npm/${name}@${version}`)
     script.
       function strictIntersectionSelector(context) {
         const dragAreaInSvgCoordinate = context.dragAreaInSvgCoordinate
@@ -128,6 +127,7 @@ html
           for (let i = 0; i < selectedElements.length; i++) {
             selectedElements[i].removeAttribute('data-selected')
           }
+          document.getElementById('selected-items').value = ''
         },
         onSelectionEnd: function (selectionEnd) {
           console.log("onSelectionEnd", selectionEnd)

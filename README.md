@@ -25,7 +25,7 @@ import svgDragSelect from "svg-drag-select"
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/pepjs@0.5.2"></script>
-<script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.2.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.3.0"></script>
 <script>/* `window.svgDragSelect` function is available */</script>
 ```
 
