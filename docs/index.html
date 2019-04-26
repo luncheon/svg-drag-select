@@ -1633,7 +1633,7 @@ THE SOFTWARE.
   const headerHeight = document.getElementsByTagName('header')[0].offsetHeight
   document.getElementsByTagName('main')[0].style.marginTop = headerHeight + 'px'
   document.getElementById('selected-items').style.top = headerHeight + 'px'
-})</script><script src="https://cdn.jsdelivr.net/npm/pepjs@0.5.2"></script><script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.2.0"></script><script>function strictIntersectionSelector(context) {
+})</script><script src="https://cdn.jsdelivr.net/npm/pepjs@0.5.2"></script><script src="./index.min.js"></script><script>function strictIntersectionSelector(context) {
   const dragAreaInSvgCoordinate = context.dragAreaInSvgCoordinate
   return context.getIntersections().filter(function (element) {
     if (context.pointerEvent.target === element) {
@@ -1662,24 +1662,22 @@ window.svgDragSelectOptions = {
   svg: document.getElementsByTagName('svg')[0],
   onSelectionStart: function (selectionStart) {
     console.log("onSelectionStart", selectionStart)
+    const selectedElements = selectionStart.svg.querySelectorAll('[data-selected]')
+    for (let i = 0; i < selectedElements.length; i++) {
+      selectedElements[i].removeAttribute('data-selected')
+    }
   },
   onSelectionEnd: function (selectionEnd) {
     console.log("onSelectionEnd", selectionEnd)
   },
   onSelectionChange: function (selectionChange) {
     console.log("onSelectionChange", selectionChange)
-    selectionChange.selectedElements
-      .concat(selectionChange.previousSelectedElements)
-      .filter(function (element, index, elements) {
-        return elements.indexOf(element) === index
-      })
-      .forEach(function (element) {
-        if (selectionChange.selectedElements.indexOf(element) !== -1) {
-          element.setAttribute('data-selected', '')
-        } else {
-          element.removeAttribute('data-selected')
-        }
-      })
+    selectionChange.newlyDeselectedElements.forEach(function (element) {
+      element.removeAttribute('data-selected')
+    })
+    selectionChange.newlySelectedElements.forEach(function (element) {
+      element.setAttribute('data-selected', '')
+    })
     document.getElementById('selected-items').value = selectionChange.selectedElements
       .map(function (element) { return element.getAttribute('data-name') })
       .sort()

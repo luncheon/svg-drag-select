@@ -36,6 +36,8 @@ export interface SvgDragSelectionEnd {
 
 export interface SvgDragSelectionChange extends SvgDragSelectionEnd {
   readonly previousSelectedElements: ReadonlyArray<SvgDragSelectElement>
+  readonly newlySelectedElements: ReadonlyArray<SvgDragSelectElement>
+  readonly newlyDeselectedElements: ReadonlyArray<SvgDragSelectElement>
 }
 
 export interface SvgDragSelectOptions<T = SvgDragSelectElement> {
@@ -46,6 +48,9 @@ export interface SvgDragSelectOptions<T = SvgDragSelectElement> {
   readonly onSelectionEnd?: (event: SvgDragSelectionEnd) => any
   readonly selector?: 'intersection' | 'enclosure' | SvgDragSelectSelector<T>
 }
+
+const exclude = <T>(source: ReadonlyArray<T>, values: ReadonlyArray<T>) =>
+  source.filter(element => values.indexOf(element) === -1)
 
 const createSvgRect = (svg: SVGSVGElement, x1: number, y1: number, x2: number, y2: number) => {
   const svgRect = svg.createSVGRect()
@@ -68,7 +73,7 @@ const transformSvgRect = (svg: SVGSVGElement, matrix: DOMMatrix, rect: SVGRect) 
 }
 
 const clientRectToSvgRect = (svg: SVGSVGElement, clientRect: SVGRect) =>
- transformSvgRect(svg, svg.getScreenCTM()!.inverse(), clientRect)
+  transformSvgRect(svg, svg.getScreenCTM()!.inverse(), clientRect)
 
 const svgRectToInitialSvgRect = (svg: SVGSVGElement, svgRect: SVGRect) => {
   const ctm = svg.getCTM()
@@ -89,6 +94,7 @@ export default (options: SvgDragSelectOptions) => {
   let pointerId: number | undefined
   let dragStartClientXPlusScrollX: number | undefined
   let dragStartClientYPlusScrollY: number | undefined
+  let selectedElements: ReadonlyArray<SvgDragSelectElement> = []
   const svg = options.svg
   const calculateClientRect = (event: PointerEvent) => createSvgRect(
     svg,
@@ -97,7 +103,6 @@ export default (options: SvgDragSelectOptions) => {
     event.clientX,
     event.clientY
   )
-  let selectedElements: ReadonlyArray<SvgDragSelectElement> = []
   const dragAreaOverlay = document.body.appendChild(document.createElement('div'))
   const dragAreaOverlayStyle = dragAreaOverlay.style
   dragAreaOverlay.className = 'svg-drag-select-area-overlay'
@@ -128,10 +133,9 @@ export default (options: SvgDragSelectOptions) => {
       dragAreaOverlayStyle.top = dragAreaInClientCoordinate.y + 'px'
       dragAreaOverlayStyle.width = dragAreaInClientCoordinate.width + 'px'
       dragAreaOverlayStyle.height = dragAreaInClientCoordinate.height + 'px'
-      if (
-        selectedElements.length !== newSelectedElements.length ||
-        selectedElements.some(element => newSelectedElements.indexOf(element) === -1)
-      ) {
+      const newlySelectedElements = exclude(newSelectedElements, selectedElements)
+      const newlyDeselectedElements = exclude(selectedElements, newSelectedElements)
+      if (newlySelectedElements.length || newlyDeselectedElements.length) {
         const previousSelectedElements = selectedElements
         selectedElements = newSelectedElements
         options.onSelectionChange && options.onSelectionChange({
@@ -143,6 +147,8 @@ export default (options: SvgDragSelectOptions) => {
           dragAreaInInitialSvgCoordinate,
           selectedElements,
           previousSelectedElements,
+          newlySelectedElements: exclude(selectedElements, previousSelectedElements),
+          newlyDeselectedElements: exclude(previousSelectedElements, selectedElements),
         })
       }
     }
@@ -161,6 +167,7 @@ export default (options: SvgDragSelectOptions) => {
         pointerId = event.pointerId
         dragStartClientXPlusScrollX = event.clientX + document.documentElement.scrollLeft + document.body.scrollLeft
         dragStartClientYPlusScrollY = event.clientY + document.documentElement.scrollTop + document.body.scrollTop
+        selectedElements = []
         onPointerMove.call(this, event)
         dragAreaOverlayStyle.display = ''
         this.addEventListener('pointermove', onPointerMove, event.pointerType === 'touch' ? nonPassive : undefined)
