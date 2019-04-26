@@ -187,8 +187,12 @@ export default (options: SvgDragSelectOptions) => {
   const originalDraggable = svg.getAttribute('draggable')
   const originalPointerEvents = svg.style.pointerEvents
   const originalTouchAction = svg.style.touchAction
+  const originalComputedTouchAction = getComputedStyle(svg).touchAction
+  const changeTouchAction = getComputedStyle(svg).touchAction !== 'none' && originalComputedTouchAction !== 'pinch-zoom'
+  if (changeTouchAction) {
+    svg.style.touchAction = 'pinch-zoom'
+  }
   svg.style.pointerEvents = 'all'
-  svg.style.touchAction = 'pinch-zoom'
   svg.setAttribute('draggable', 'false')
   svg.addEventListener('pointerdown', onPointerDown)
   svg.addEventListener('pointerup', onPointerUp)
@@ -203,7 +207,9 @@ export default (options: SvgDragSelectOptions) => {
         svg.setAttribute('draggable', originalDraggable)
       }
       svg.style.pointerEvents = originalPointerEvents
-      svg.style.touchAction = originalTouchAction
+      if (changeTouchAction) {
+        svg.style.touchAction = originalTouchAction
+      }
       svg.removeEventListener('pointerdown', onPointerDown)
       svg.removeEventListener('pointerup', onPointerUp)
       svg.removeEventListener('pointermove', onPointerMove)
