@@ -54,6 +54,7 @@ html
       svg {
         width: 150vw;
         height: 75vw;
+        visibility: hidden;
       }
       path { fill: #ddd; stroke: #888; }
       path[data-selected] { fill: #f84f79; }
@@ -70,7 +71,7 @@ html
         div(style="flex: auto")
       p= description
       label
-        input(type="radio" name="selector" value="enclosure" checked onchange="window.svgDragSelectOptions.selector = 'enclosure'")
+        input(type="radio" name="selector" value="enclosure" checked onchange="svgDragSelectOptions.selector = 'enclosure'")
         | &nbsp;enclosure
       label
         input(type="radio" name="selector" value="intersection")
@@ -146,9 +147,10 @@ html
             .join('\n')
         },
       }
-      Object.defineProperty(window.svgDragSelectOptions, 'selector', {
+      Object.defineProperty(svgDragSelectOptions, 'selector', {
         get: function () {
           return document.querySelector('input[name=selector]:checked').value || strictIntersectionSelector
         }
       })
-      svgDragSelect(window.svgDragSelectOptions)
+      svgDragSelect(svgDragSelectOptions)
+      svgDragSelectOptions.svg.style.visibility = 'visible'
