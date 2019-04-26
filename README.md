@@ -25,7 +25,7 @@ import svgDragSelect from "svg-drag-select"
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/pepjs@0.5.2"></script>
-<script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.3.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.3.1"></script>
 <script>/* `window.svgDragSelect` function is available */</script>
 ```
 
@@ -60,6 +60,7 @@ const {
     // for example: handles mouse left button only.
     if (pointerEvent.button !== 0) {
       cancel()
+      return
     }
     // for example: clear "data-selected" attribute
     const selectedElements = svg.querySelectorAll('[data-selected]')
@@ -104,11 +105,15 @@ const {
 
 You may need to implement your own selector function because:
 
-* Chrome and Safari's `getIntersectionList()` implementation is poor: they seem to check only bounding boxes.  
-  (BTW, IE 11 seems to have a good implementation...)
-* If `SVGSVGElement.prototype.getIntersectionList` or `SVGSVGElement.prototype.getEnclosureList` is not available, `svg-drag-select` uses own implementation that checks only bounding boxes.
-  * [Firefox does not yet support `getIntersectionList()` and `getEnclosureList()`.](https://bugzilla.mozilla.org/show_bug.cgi?id=501421)
-* Implementing a good selector is so hard for me because stricity and performance are in a trade-off relationship.
+* If `"intersection"` is specified as `selector` option,
+  * If [`svg.getIntersectionList`](https://www.w3.org/TR/2011/REC-SVG11-20110816/struct.html#__svg__SVGSVGElement__getIntersectionList) is available,  
+    `svg.getIntersectionList(referenceElement, dragAreaInInitialSvgCoordinate)` is used.
+    * Chrome and Safari's `getIntersectionList()` implementation is poor: they seem to check only bounding boxes.
+  * If `svg.getIntersectionList` is not available,  
+    `svg-drag-select` uses its own implementation that checks only bounding boxes.
+    * [Firefox does not yet support `getIntersectionList()` and `getEnclosureList()`.](https://bugzilla.mozilla.org/show_bug.cgi?id=501421)
+* Implementing a good `"intersection"` selector is so hard for me because stricity and performance are in a trade-off relationship.
+  * (BTW, IE 11 seems to have a good `SVGSVGElement.prototype.getIntersectionList()` implementation...)
 
 The following is a custom selector example written for [demo](https://luncheon.github.io/svg-drag-select/).
 
