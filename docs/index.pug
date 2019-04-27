@@ -84,7 +84,7 @@ html
       //- https://simplemaps.com/resources/svg-world
       include ./world.svg
 
-    textarea#selected-items(disabled)
+    textarea#selected-items(disabled rows="10")
 
     script.
       addEventListener('load', function () {
@@ -93,7 +93,8 @@ html
         document.getElementById('selected-items').style.top = headerHeight + 'px'
       })
     script(src="https://cdn.jsdelivr.net/npm/pepjs@0.5.2")
-    script(src=`https://cdn.jsdelivr.net/npm/${name}@${version}`)
+    //- script(src=`https://cdn.jsdelivr.net/npm/${name}@${version}`)
+    script(src="index.min.js")
     script.
       function strictIntersectionSelector(context) {
         const dragAreaInSvgCoordinate = context.dragAreaInSvgCoordinate

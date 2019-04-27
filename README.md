@@ -3,7 +3,7 @@
 A vanilla-js module for adding select-on-drag behavior to inline SVG elements.  
 [Demo](https://luncheon.github.io/svg-drag-select/)
 
-* Lightweight (~ 1.6 kB minified gzipped)
+* Lightweight (~ 1.5 kB minified gzipped)
   * Currently, [Pointer Events Polyfill](https://github.com/jquery/PEP) is required for Safari (but [Safari seems to support Pointer Events soon](https://webkit.org/blog/8676/release-notes-for-safari-technology-preview-78/)).  
     No other dependencies.
 

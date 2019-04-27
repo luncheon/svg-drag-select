@@ -1,4 +1,3 @@
-import { nonPassive } from './non-passive';
 import { SvgDragSelectElement, getEnclosures, getIntersections } from './selector';
 export { SvgDragSelectElement } from './selector'
 
@@ -96,9 +95,6 @@ export default (options: SvgDragSelectOptions) => {
 
   const onPointerMove = function (this: SVGSVGElement, event: PointerEvent) {
     if (event.pointerId === pointerId) {
-      if (event.type === 'pointermove' && event.pointerType === 'touch') {
-        event.preventDefault()
-      }
       const dragAreaInClientCoordinate = calculateClientRect(event)
       const dragAreaInSvgCoordinate = transformSvgRect(this, this.getScreenCTM()!.inverse(), dragAreaInClientCoordinate)
       const dragAreaInInitialSvgCoordinate = transformSvgRect(this, this.getCTM(), dragAreaInSvgCoordinate)
@@ -157,7 +153,6 @@ export default (options: SvgDragSelectOptions) => {
         selectedElements = []
         onPointerMove.call(this, event)
         dragAreaOverlayStyle.display = ''
-        this.addEventListener('pointermove', onPointerMove, event.pointerType === 'touch' ? nonPassive : undefined)
         this.setPointerCapture(pointerId)
       }
     }
@@ -166,7 +161,6 @@ export default (options: SvgDragSelectOptions) => {
   const onPointerUp = function (this: SVGSVGElement, event: PointerEvent) {
     if (event.pointerId === pointerId) {
       this.releasePointerCapture(pointerId)
-      this.removeEventListener('pointermove', onPointerMove)
       pointerId = undefined
       dragAreaOverlayStyle.display = 'none'
       const dragAreaInClientCoordinate = calculateClientRect(event)
@@ -190,11 +184,13 @@ export default (options: SvgDragSelectOptions) => {
   const originalComputedTouchAction = getComputedStyle(svg).touchAction
   const changeTouchAction = getComputedStyle(svg).touchAction !== 'none' && originalComputedTouchAction !== 'pinch-zoom'
   if (changeTouchAction) {
+    svg.style.touchAction = 'manipulation'
     svg.style.touchAction = 'pinch-zoom'
   }
   svg.style.pointerEvents = 'all'
   svg.setAttribute('draggable', 'false')
   svg.addEventListener('pointerdown', onPointerDown)
+  svg.addEventListener('pointermove', onPointerMove)
   svg.addEventListener('pointerup', onPointerUp)
   svg.addEventListener('pointercancel', onPointerUp)
 
@@ -211,8 +207,8 @@ export default (options: SvgDragSelectOptions) => {
         svg.style.touchAction = originalTouchAction
       }
       svg.removeEventListener('pointerdown', onPointerDown)
-      svg.removeEventListener('pointerup', onPointerUp)
       svg.removeEventListener('pointermove', onPointerMove)
+      svg.removeEventListener('pointerup', onPointerUp)
       svg.removeEventListener('pointercancel', onPointerUp)
       if (dragAreaOverlay.parentElement) {
         dragAreaOverlay.parentElement.removeChild(dragAreaOverlay)
