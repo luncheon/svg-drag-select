@@ -1,11 +1,7 @@
 # svg-drag-select
 
-A vanilla-js module for adding select-on-drag behavior to inline SVG elements.  
+A lightweight (~ 1.8 kB minified gzipped) vanilla-js module for adding select-on-drag behavior to inline SVG elements.  
 [Demo](https://luncheon.github.io/svg-drag-select/)
-
-* Lightweight (~ 1.5 kB minified gzipped)
-  * Currently, [Pointer Events Polyfill](https://github.com/jquery/PEP) is required for Safari (but [Safari seems to support Pointer Events soon](https://webkit.org/blog/8676/release-notes-for-safari-technology-preview-78/)).  
-    No other dependencies.
 
 
 ## Installation
@@ -13,18 +9,16 @@ A vanilla-js module for adding select-on-drag behavior to inline SVG elements.
 ### via [npm](https://www.npmjs.com/package/svg-drag-select) (with a module bundler)
 
 ```
-$ npm i pepjs svg-drag-select
+$ npm i svg-drag-select
 ```
 
 ```js
-import "pepjs"
 import svgDragSelect from "svg-drag-select"
 ```
 
 ### via CDN ([jsDelivr](https://www.jsdelivr.com/package/npm/svg-drag-select))
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/pepjs@0.5.2"></script>
 <script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.3.1"></script>
 <script>/* `window.svgDragSelect` function is available */</script>
 ```
