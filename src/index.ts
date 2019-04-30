@@ -249,13 +249,11 @@ export default (options: SvgDragSelectOptions) => {
       target: event.target,
       currentTarget: event.currentTarget,
     })
-    let previousTouch: Touch
     const onTouchEnd = function (this: SVGSVGElement, event: TouchEvent) {
       if (pointerId !== undefined) {
         for (let i = 0; i < event.changedTouches.length; i++) {
           if (event.changedTouches[i].identifier === pointerId) {
-            onPointerUp.call(this, touchEventToPointerEventLike(event, previousTouch))
-            break
+            onPointerUp.call(this, touchEventToPointerEventLike(event, event.changedTouches[0]))
           }
         }
       }
@@ -267,9 +265,9 @@ export default (options: SvgDragSelectOptions) => {
       }
     })
     svg.addEventListener('touchmove', function (event) {
-      if (event.touches.length === 1 && event.touches[0].identifier === pointerId) {
+      if (event.touches.length === 1) {
         event.preventDefault()
-        onPointerMove.call(this, touchEventToPointerEventLike(event, previousTouch = event.touches[0]))
+        onPointerMove.call(this, touchEventToPointerEventLike(event, event.touches[0]))
       }
     })
     svg.addEventListener('touchend', onTouchEnd)
