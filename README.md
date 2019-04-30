@@ -1,6 +1,7 @@
 # svg-drag-select
 
-A lightweight (~ 1.8 kB minified gzipped) vanilla-js module for adding select-on-drag behavior to inline SVG elements.  
+Add select-on-drag behavior to inline SVG elements.  
+No dependencies and lightweight (~ 1.8 kB minified gzipped).  
 [Demo](https://luncheon.github.io/svg-drag-select/)
 
 
@@ -19,7 +20,7 @@ import svgDragSelect from "svg-drag-select"
 ### via CDN ([jsDelivr](https://www.jsdelivr.com/package/npm/svg-drag-select))
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.3.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.4.0"></script>
 <script>/* `window.svgDragSelect` function is available */</script>
 ```
 
@@ -48,7 +49,8 @@ const {
   // followings are optional selection handlers
   onSelectionStart({
     svg,                      // the svg element.
-    pointerEvent,             // a "pointerdown" event.
+    pointerEvent,             // a `PointerEvent` instance with "pointerdown" type.
+                              // (in case of Safari, a `MouseEvent` or a `TouchEvent` is used instead.)
     cancel,                   // cancel() cancels.
   }) {
     // for example: handles mouse left button only.
@@ -65,7 +67,8 @@ const {
 
   onSelectionChange({
     svg,                      // the svg element.
-    pointerEvent,             // either a "pointerdown" event or a "pointermove" event.
+    pointerEvent,             // a `PointerEvent` instance with either a "pointerdown" event or a "pointermove" event.
+                              // (in case of Safari, a `MouseEvent` or a `TouchEvent` is used instead.)
     selectedElements,         // selected element array.
     previousSelectedElements, // previous selected element array.
     newlySelectedElements,    // `selectedElements - previousSelectedElements`
@@ -78,7 +81,8 @@ const {
 
   onSelectionEnd({
     svg,                      // the svg element.
-    pointerEvent,             // either a "pointerup" event or a "pointercancel" event.
+    pointerEvent,             // a `PointerEvent` instance with either a "pointerup" event or a "pointercancel" event.
+                              // (in case of Safari, a `MouseEvent` or a `TouchEvent` is used instead.)
     selectedElements,         // selected element array.
   }) {
   },
@@ -115,7 +119,8 @@ The following is a custom selector example written for [demo](https://luncheon.g
 const strictIntersectionSelector = ({
   svg,                            // the svg element.
   referenceElement,               // please select only descendants of this SVGElement if specified.
-  pointerEvent,                   // either a "pointerdown" event or a "pointermove" event.
+  pointerEvent,                   // a `PointerEvent` instance with either a "pointerdown" event or a "pointermove" event.
+                                  // (in case of Safari, a `MouseEvent` or a `TouchEvent` is used instead.)
   dragAreaInClientCoordinate,     // a `SVGRect` that represents the dragging area in client coordinate.
   dragAreaInSvgCoordinate,        // a `SVGRect` that represents the dragging area in svg coordinate.
   dragAreaInInitialSvgCoordinate, // a `SVGRect` that represents the dragging area in initial viewport coordinate of the svg.

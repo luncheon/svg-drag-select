@@ -92,8 +92,8 @@ html
         document.getElementsByTagName('main')[0].style.marginTop = headerHeight + 'px'
         document.getElementById('selected-items').style.top = headerHeight + 'px'
       })
-    //- script(src=`https://cdn.jsdelivr.net/npm/${name}@${version}`)
-    script(src="index.min.js")
+    script(src=`https://cdn.jsdelivr.net/npm/${name}@${version}`)
+    //- script(src="index.min.js")
     script.
       function strictIntersectionSelector(context) {
         const dragAreaInSvgCoordinate = context.dragAreaInSvgCoordinate

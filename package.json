@@ -1,6 +1,6 @@
 {
   "name": "svg-drag-select",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "A vanilla-js module for adding select-on-drag behavior to inline SVG elements.",
   "license": "WTFPL",
   "repository": "luncheon/svg-drag-select",
@@ -40,6 +40,6 @@
     "rollup": "^1.10.1",
     "sane": "^4.1.0",
     "typescript": "^3.4.5",
-    "uglify-js": "^3.5.8"
+    "uglify-js": "^3.5.9"
   }
 }
