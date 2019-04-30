@@ -7,18 +7,9 @@ export type PointerEventLike =
       pointerId?: number
       isPrimary?: boolean
     }
-  | {
-      __proto__: TouchEvent
+  | Touch & TouchEvent & {
       pointerId?: number
       isPrimary?: boolean
-      clientX: number
-      clientY: number
-      pageX: number
-      pageY: number
-      screenX: number
-      screenY: number
-      target: EventTarget | null
-      currentTarget: EventTarget | null
     }
 
 export interface SvgDragSelectionStart {
@@ -237,18 +228,8 @@ export default (options: SvgDragSelectOptions) => {
     if (changeTouchAction) {
       svg.style.touchAction = 'manipulation'
     }
-    const touchEventToPointerEventLike = (event: TouchEvent, touch: Touch): PointerEventLike => ({
-      __proto__: event,
-      pointerId: touch.identifier,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      pageX: touch.pageX,
-      pageY: touch.pageY,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      target: event.target,
-      currentTarget: event.currentTarget,
-    })
+    const touchEventToPointerEventLike = (event: TouchEvent, touch: Touch): PointerEventLike =>
+      Object.assign({ pointerId: touch.identifier }, touch, event)
     const onTouchEnd = function (this: SVGSVGElement, event: TouchEvent) {
       if (pointerId !== undefined) {
         for (let i = 0; i < event.changedTouches.length; i++) {
