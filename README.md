@@ -20,7 +20,7 @@ import svgDragSelect from "svg-drag-select"
 ### via CDN ([jsDelivr](https://www.jsdelivr.com/package/npm/svg-drag-select))
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.4.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/svg-drag-select@0.4.1"></script>
 <script>/* `window.svgDragSelect` function is available */</script>
 ```
 
