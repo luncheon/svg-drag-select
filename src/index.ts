@@ -1,16 +1,10 @@
-import { SvgDragSelectElement, getEnclosures, getIntersections } from './selector';
+import { SvgDragSelectElement, getEnclosures, getIntersections } from './selector'
 export { SvgDragSelectElement } from './selector'
 
 export type PointerEventLike =
   | PointerEvent
-  | MouseEvent & {
-      pointerId?: number
-      isPrimary?: boolean
-    }
-  | Touch & TouchEvent & {
-      pointerId?: number
-      isPrimary?: boolean
-    }
+  | Partial<PointerEvent> & MouseEvent
+  | Partial<PointerEvent> & Touch & TouchEvent
 
 export interface SvgDragSelectionStart {
   readonly svg: SVGSVGElement
