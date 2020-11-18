@@ -38,7 +38,7 @@ const {
                     // this element has "svg-drag-select-area-overlay" class by default.
 } = svgDragSelect({
   // the svg element (required).
-  svg: document.getElementById("so-sexy-svg"),
+  svg: document.getElementById("my-svg"),
 
   // followings are optional parameters with default values.
   referenceElement: null,     // selects only descendants of this SVGElement if specified.
@@ -87,6 +87,10 @@ const {
   }) {
   },
 })
+
+// cleanup for when the select-on-drag behavior is no longer needed
+// (including unbinding of the event listeners)
+cancel()
 ```
 
 * CSS
