@@ -27,7 +27,7 @@
     "clean": "rimraf docs/index.html docs/index.min.js es/ cjs/ iife/",
     "build": "npm-run-all -s clean -p build:*",
     "build:ts": "node build.js",
-    "build:demo": "pug docs/index.pug -O package.json",
+    "build:demo": "node -e \"require('fs').writeFileSync('docs/index.html',require('pug').compileFile('docs/index.pug')(require('./package.json')),'utf8')\"",
     "watch": "npm-run-all -s clean -p watch:*",
     "watch:ts": "sane \"npm run build:ts\" --glob=src/**/*.ts",
     "watch:demo": "npm run build:demo -- -w"
@@ -35,11 +35,11 @@
   "devDependencies": {
     "gzip-size": "^6.0.0",
     "npm-run-all": "^4.1.5",
-    "pug-cli": "^1.0.0-alpha6",
+    "pug": "^3.0.2",
     "rimraf": "^3.0.2",
-    "rollup": "^2.33.3",
+    "rollup": "^2.40.0",
     "sane": "^4.1.0",
-    "typescript": "^4.0.5",
-    "uglify-js": "^3.11.6"
+    "typescript": "^4.2.3",
+    "uglify-js": "^3.13.0"
   }
 }
