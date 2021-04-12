@@ -97,6 +97,7 @@ export default (options: SvgDragSelectOptions) => {
   dragAreaOverlay.className = 'svg-drag-select-area-overlay'
   dragAreaOverlayStyle.position = 'fixed'
   dragAreaOverlayStyle.pointerEvents = 'none'
+  dragAreaOverlayStyle.display = 'none'
 
   const onPointerMove = function (this: SVGSVGElement, event: PointerEventLike) {
     if ((event.pointerId || 0) === pointerId) {
