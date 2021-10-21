@@ -264,4 +264,4 @@ var svgDragSelect = (function () {
 
     return index;
 
-}());
+})();
